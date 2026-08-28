@@ -1,0 +1,5 @@
+{"hourly": {"time": ["2021-01-01T00:00", "2021-01-01T01:00"],
+  "pm2_5": [50.0, 70.0], "pm10": [60.0, 80.0],
+  "carbon_monoxide": [900.0, 1100.0], "nitrogen_dioxide": [30.0, 40.0],
+  "sulphur_dioxide": [10.0, 12.0], "ozone": [20.0, 22.0],
+  "aerosol_optical_depth": [0.3, 0.4], "dust": [5.0, 6.0]}}

@@ -1,0 +1,4 @@
+{"hourly": {"time": ["2021-01-01T00:00", "2021-01-01T01:00"],
+  "temperature_2m": [-5.0, -4.0], "relative_humidity_2m": [80.0, 82.0],
+  "wind_speed_10m": [2.0, 3.0], "wind_direction_10m": [90.0, 90.0],
+  "surface_pressure": [1010.0, 1011.0], "boundary_layer_height": [200.0, 250.0]}}
