@@ -1,0 +1,8 @@
+{"files": [
+  {"key": "bishkek_monitoring_us.embassy2019-2024.rar", "size": 402963,
+   "checksum": "md5:0123456789abcdef0123456789abcdef",
+   "links": {"self": "https://zenodo.org/api/records/12720883/files/bishkek_monitoring_us.embassy2019-2024.rar/content"}},
+  {"key": "bishkek_camx_pm25_monthlyavg.csv", "size": 151800,
+   "checksum": "md5:ffffffffffffffffffffffffffffffff",
+   "links": {"self": "https://zenodo.org/api/records/12720883/files/bishkek_camx_pm25_monthlyavg.csv/content"}}
+]}
