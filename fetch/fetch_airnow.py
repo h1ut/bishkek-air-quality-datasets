@@ -22,7 +22,9 @@ def fetch_bishkek(cfg) -> pd.DataFrame:
         try:
             body = common.cached_get(BASE, params)
         except Exception as e:  # noqa: BLE001
-            print(f"[airnow] {day.date()} failed: {e}")
+            # never interpolate the exception message: it embeds the request URL,
+            # which carries API_KEY=... as a query param
+            print(f"[airnow] {day.date()} failed: {type(e).__name__}")
             continue
         for rec in body:
             if rec.get("ParameterName") != "PM2.5":
@@ -46,10 +48,11 @@ def main(argv=None):
         return 0
     Path("data/processed").mkdir(parents=True, exist_ok=True)
     df = fetch_bishkek(cfg)
+    # spec: quality report is always written, even on partial / empty data
+    common.write_quality_report("airnow_bishkek", df, ["pm2_5"])
     if df.empty:
         return 1
     df.to_csv("data/processed/airnow_bishkek_daily.csv", index=False)
-    common.write_quality_report("airnow_bishkek", df, ["pm2_5"])
     print(f"[airnow] Bishkek: {len(df)} days")
     return 0
 

@@ -13,6 +13,6 @@
      "pollutants": "so2|no2|co|pm10|pm2_5|tsp", "met_variables": "",
      "period_start": "", "period_end": "present", "status": "active",
      "location_precision": "city-centroid", "access_url": "https://meteo.kg/",
-     "coord_source": "approx - Kyrgyzhydromet HQ area; confirm during implementation",
+     "coord_source": "approximate - Kyrgyzhydromet HQ vicinity; exact station location not published",
      "quality_grade": "B", "notes": "Historical data only via quarterly PDF bulletins"}}
 ]}

@@ -9,11 +9,23 @@ AQ_VARS = ["pm2_5", "pm10", "carbon_monoxide", "nitrogen_dioxide",
 WX_VARS = ["temperature_2m", "relative_humidity_2m", "wind_speed_10m",
            "wind_direction_10m", "surface_pressure", "boundary_layer_height"]
 
+# Station-schema columns that must always be documented in the data dictionary,
+# even when no station CSVs exist locally (empty `stations` frame contributes nothing).
+_STATION_POLLUTANTS = ["pm2_5", "pm10", "sulphur_dioxide", "nitrogen_dioxide",
+                       "carbon_monoxide", "ozone"]
+KNOWN_STATION_COLS = (
+    ["station_key", "city", "date", "pm2_5", "pm10", "sulphur_dioxide",
+     "nitrogen_dioxide", "carbon_monoxide", "ozone", "relative_humidity", "temperature"]
+    + [f"{v}_source" for v in _STATION_POLLUTANTS]
+    + [f"n_hours_{v}" for v in _STATION_POLLUTANTS]
+)
+
 _DICT = {
     "pm2_5": ("OpenAQ/AirNow or CAMS", "µg/m³", "hourly→daily mean; _max kept",
               "ground = measured; grid = model, needs validation"),
     "pm10": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
-    "carbon_monoxide": ("OpenAQ or CAMS", "µg/m³ (OpenAQ) / µg/m³ (CAMS)",
+    "carbon_monoxide": ("OpenAQ or CAMS",
+                        "µg/m³ (CAMS); OpenAQ CO may be mg/m³ or ppm depending on provider — check per station",
                         "daily mean", "check unit per source; CAMS is µg/m³"),
     "nitrogen_dioxide": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
     "sulphur_dioxide": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
@@ -22,12 +34,18 @@ _DICT = {
     "dust": ("CAMS", "µg/m³", "daily mean", "model surface dust estimate"),
     "temperature_2m": ("ERA5", "°C", "daily mean; _max kept", "reanalysis"),
     "relative_humidity_2m": ("ERA5", "%", "daily mean", "reanalysis"),
+    "temperature": ("OpenAQ", "°C", "hourly→daily mean; _max kept",
+                    "ground station co-located met; sensor-dependent"),
+    "relative_humidity": ("OpenAQ", "%", "hourly→daily mean",
+                          "ground station co-located met; sensor-dependent"),
     "wind_speed_10m": ("ERA5", "m/s", "daily mean", "reanalysis"),
     "wind_direction_10m": ("ERA5", "° from N", "daily vector mean", "reanalysis"),
     "surface_pressure": ("ERA5", "hPa", "daily mean", "reanalysis"),
     "boundary_layer_height": ("ERA5", "m", "daily mean", "reanalysis; key for winter inversions"),
-    "dangerous_day": ("derived", "bool", "pm2_5 > 55.4", "EPA Unhealthy daily"),
-    "exceeds_kg_limit": ("derived", "bool", "pm2_5 > 35", "Kyrgyz national daily limit"),
+    "dangerous_day": ("derived", "bool", "pm2_5 > 55.4",
+                      "EPA Unhealthy daily; <NA> where pm2_5 is missing (not the same as False)"),
+    "exceeds_kg_limit": ("derived", "bool", "pm2_5 > 35",
+                         "Kyrgyz national daily limit; <NA> where pm2_5 is missing (not the same as False)"),
     "cell_id": ("derived", "id", "grid cell key `<lat:.4f>_<lon:.4f>`", "—"),
     "lat": ("grid/station", "degrees", "point coordinate", "—"),
     "lon": ("grid/station", "degrees", "point coordinate", "—"),
@@ -42,7 +60,7 @@ def build_stations(proc_dir="data/processed") -> pd.DataFrame:
     frames = []
     for fp in sorted(glob.glob(f"{proc_dir}/openaq_*_daily.csv")):
         df = pd.read_csv(fp)
-        city = Path(fp).stem.replace("openaq_", "").replace("_daily", "")
+        city = Path(fp).stem.removeprefix("openaq_").removesuffix("_daily")
         df["station_key"] = city
         for v in [c for c in df.columns if c in AQ_VARS]:
             df[f"{v}_source"] = "openaq"
@@ -64,8 +82,8 @@ def build_grid_dataset(proc_dir="data/processed") -> pd.DataFrame:
     g = pd.read_parquet(Path(proc_dir) / "openmeteo_grid_daily.parquet")
     g["date"] = pd.to_datetime(g["date"])
     if "pm2_5" in g:
-        g["dangerous_day"] = g["pm2_5"] > 55.4
-        g["exceeds_kg_limit"] = g["pm2_5"] > 35
+        g["dangerous_day"] = (g["pm2_5"] > 55.4).astype("boolean").mask(g["pm2_5"].isna())
+        g["exceeds_kg_limit"] = (g["pm2_5"] > 35).astype("boolean").mask(g["pm2_5"].isna())
     front = [c for c in ["cell_id", "lat", "lon", "date"] if c in g]
     rest = [c for c in g.columns if c not in front]
     return g[front + rest]
@@ -98,7 +116,7 @@ def write_data_dictionary(cols, path="dataset/data_dictionary.md") -> None:
         else:
             s, u, agg, cav = ("TODO-REVIEW", "TODO-REVIEW", "TODO-REVIEW", "TODO-REVIEW")
         rows.append(f"| {c} | {s} | {u} | {agg} | {cav} |")
-    Path(path).write_text("\n".join(rows), encoding="utf-8")
+    Path(path).write_text("\n".join(rows) + "\n", encoding="utf-8")
 
 
 def main(argv=None):
@@ -135,7 +153,8 @@ def main(argv=None):
         near = grid[grid["cell_id"].isin(near_cells) & grid["date"].isin(window)]
         near.to_csv("dataset/grid_daily_sample.csv", index=False)
 
-    write_data_dictionary(list(dict.fromkeys(list(stations.columns) + list(grid.columns))))
+    dict_cols = sorted(set(stations.columns) | set(grid.columns) | set(KNOWN_STATION_COLS))
+    write_data_dictionary(dict_cols)
 
     print(f"stations_daily: {len(stations)} rows; grid_daily: {len(grid)} rows")
     if not grid.empty and "dangerous_day" in grid:

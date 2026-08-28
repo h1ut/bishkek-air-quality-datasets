@@ -112,8 +112,8 @@ The machine-readable catalog is [`catalog/sources.csv`](catalog/sources.csv)
 | open_meteo_era5 | Open-Meteo Historical Weather (ERA5) | reanalysis | Open-Meteo / ECMWF ERA5 | REST API | no | 1940-present (used from 2021 onward) | hourly | CC BY 4.0 / ERA5 licence | B |
 | sentinel5p | Sentinel-5P TROPOMI | satellite | ESA / Copernicus | openEO / GEE / Data Space | yes (free account) | 2018-present | daily overpass | Copernicus free/open | B |
 | cams_eac4 | CAMS Global Reanalysis EAC4 | reanalysis | ECMWF / Copernicus ADS | CDS API (cdsapi) | yes (free account) | 2003-present | 3-hourly | Copernicus/Licence to use Copernicus Products | B |
-| who_aap_db | WHO Ambient Air Quality Database | study_table | World Health Organization | File download | no | updated ~2024 | annual | WHO terms | B |
-| worldbank_bishkek_2023 | World Bank Air Quality Analysis for Bishkek (2023) | study_table | World Bank | Report + figures | no | 2019-2022 | report | World Bank open access | B |
+| who_aap_db | WHO Ambient Air Quality Database | study_table | World Health Organization | File download | no | updated ~2024 | annual | WHO terms | C |
+| worldbank_bishkek_2023 | World Bank Air Quality Analysis for Bishkek (2023) | study_table | World Bank | Report + figures | no | 2019-2022 | report | World Bank open access | C |
 
 ### Measurements vs model output
 
@@ -157,10 +157,12 @@ The machine-readable catalog is [`catalog/sources.csv`](catalog/sources.csv)
 
 - **who_aap_db** — WHO Ambient Air Quality Database, city-year PM2.5/PM10/NO2
   aggregates. *ML relevance:* an annual benchmark to sanity-check levels.
-  *Grade **B*** — authoritative but only city-year granularity.
+  *Grade **C*** — aggregate-only: city-year values, not a raw or station-level
+  series.
 - **worldbank_bishkek_2023** — World Bank source-apportionment analysis for
   Bishkek. *ML relevance:* priors on which sources drive Bishkek PM2.5.
-  *Grade **B*** — tables are derived from Clarity sensors, not raw data.
+  *Grade **C*** — published as report tables derived from Clarity sensors, not
+  raw data.
 
 **Model output / reanalysis / satellite (estimates, not measurements):**
 

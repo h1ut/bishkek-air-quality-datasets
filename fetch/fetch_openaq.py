@@ -12,18 +12,44 @@ PARAM_MAP = {"pm25": "pm2_5", "pm10": "pm10", "so2": "sulphur_dioxide",
 STAGING = "data/processed/_stations_staging.csv"
 
 
+def _record_hours(rec):
+    """Coverage-derived hour count for a /measurements/daily record, or pd.NA.
+
+    On the daily endpoint a record already represents a whole day, so the
+    "≥18 of 24 hours" rule cannot be applied from a raw row count. Use the
+    API's own coverage/expectedCount if present; otherwise NA (unknown).
+    """
+    cov = rec.get("coverage") or {}
+    for k in ("observedCount", "expectedCount", "observed_count", "expected_count"):
+        if cov.get(k) is not None:
+            return cov[k]
+    for k in ("expectedCount", "expected_count"):
+        if rec.get(k) is not None:
+            return rec[k]
+    return pd.NA
+
+
 def _sensor_daily(sensor_id, cfg, headers):
     url = f"{BASE}/sensors/{sensor_id}/measurements/daily"
     params = {"date_from": cfg["date_start"], "date_to": cfg["date_end"], "limit": 366}
+    daily_path = True
     try:
         body = common.cached_get(url, params, headers=headers)
     except Exception:
+        daily_path = False
         url = f"{BASE}/sensors/{sensor_id}/measurements"
-        body = common.cached_get(url, params, headers=headers)
+        # separate params: the hourly endpoint needs a far larger page size than
+        # the 366-row daily cap, or a multi-year sweep is silently truncated
+        fb_params = {"date_from": cfg["date_start"], "date_to": cfg["date_end"], "limit": 1000}
+        body = common.cached_get(url, fb_params, headers=headers)
+        print(f"[openaq] sensor {sensor_id}: /daily unavailable, used /measurements fallback")
     rows = []
     for r in body.get("results", []):
         ts = (r.get("period", {}).get("datetimeFrom", {}) or {}).get("utc")
-        rows.append({"time": ts, "value": r.get("value")})
+        row = {"time": ts, "value": r.get("value")}
+        if daily_path:
+            row["n_hours"] = _record_hours(r)
+        rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -45,6 +71,12 @@ def fetch_city(city, lat, lon, cfg) -> pd.DataFrame:
                 continue
             sdf = sdf.rename(columns={"value": canon})
             daily = common.to_daily(sdf, [canon])
+            if "n_hours" in sdf.columns:
+                # daily endpoint: n_hours_<var> is NA / coverage-derived, not a
+                # real hour count — overwrite to_daily's fabricated "1 row = 1 hour"
+                key = pd.to_datetime(sdf["time"], utc=True).dt.tz_localize(None).dt.normalize()
+                cov = dict(zip(key, sdf["n_hours"]))
+                daily[f"n_hours_{canon}"] = daily["date"].map(cov)
             frames.append(daily[["date", canon, f"n_hours_{canon}"]])
             params_present.append(canon)
         c = loc.get("coordinates", {})
@@ -82,7 +114,9 @@ def fetch_city(city, lat, lon, cfg) -> pd.DataFrame:
                 combined = pd.concat(poll_frames, ignore_index=False)
                 combined = combined.groupby("date", as_index=False).agg({
                     pollutant: "mean",
-                    f"n_hours_{pollutant}": "sum"
+                    # "max" not "sum": summing hour counts across co-located sensors
+                    # produced a sensor count, not an hours-of-day figure
+                    f"n_hours_{pollutant}": "max"
                 })
                 combined_frames.append(combined)
 
@@ -101,6 +135,10 @@ def main(argv=None):
     ap.add_argument("--config", default=None)
     args = ap.parse_args(argv)
     cfg = common.load_config(args.config)
+    if not cfg.get("openaq_api_key"):
+        print("[openaq] no API key. Set OPENAQ_API_KEY (register free at "
+              "https://explore.openaq.org/register). A missing key is not a failure.")
+        return 0
     Path("data/processed").mkdir(parents=True, exist_ok=True)
     all_stations = []
     cities_succeeded = 0

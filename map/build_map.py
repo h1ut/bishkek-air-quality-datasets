@@ -91,8 +91,11 @@ def build(stations_path, studies_path, grid_path=None,
                                      show=False)
             for _, r in sub.iterrows():
                 val = r[snapshot_var]
-                # Guard against ZeroDivisionError / NaN: if vmax is falsy or val is NaN, treat frac as 0
-                if pd.isna(val) or not vmax or vmax == 0:
+                if pd.isna(val):
+                    # no-data cell: skip entirely, do not paint it as clean air
+                    continue
+                # Guard against ZeroDivisionError: if vmax is falsy, treat frac as 0
+                if not vmax:
                     frac = 0
                 else:
                     frac = min(val / vmax, 1.0)

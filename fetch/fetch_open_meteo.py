@@ -20,7 +20,7 @@ def _get(url, params):
     ``error: true`` handling, which only covers JSON error payloads."""
     try:
         return common.cached_get(url, params)
-    except (requests.exceptions.RequestException, ValueError) as exc:
+    except (requests.exceptions.RequestException, ValueError, RuntimeError) as exc:
         print(f"[open-meteo] request failed for {url}: {exc}")
         return {}
 

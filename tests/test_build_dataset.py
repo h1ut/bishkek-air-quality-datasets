@@ -25,6 +25,19 @@ def test_grid_flags(tmp_path):
     assert out.set_index("date").loc["2021-01-01", "exceeds_kg_limit"] == True
 
 
+def test_grid_flags_na_when_pm2_5_missing(tmp_path):
+    g = pd.DataFrame({"cell_id": ["a", "a"], "lat": [42.5, 42.5], "lon": [74.0, 74.0],
+                      "date": pd.to_datetime(["2021-01-01", "2021-01-02"]),
+                      "pm2_5": [float("nan"), 70.0], "n_hours_pm2_5": [0, 24]})
+    g.to_parquet(tmp_path / "openmeteo_grid_daily.parquet", index=False)
+    out = bd.build_grid_dataset(str(tmp_path)).set_index("date")
+    assert pd.isna(out.loc["2021-01-01", "dangerous_day"])
+    assert pd.isna(out.loc["2021-01-01", "exceeds_kg_limit"])
+    assert out.loc["2021-01-02", "dangerous_day"] == True
+    # .sum() on a nullable boolean Series skips NA and must not raise
+    assert out["dangerous_day"].sum() == 1
+
+
 def test_to_long_shape():
     g = pd.DataFrame({"cell_id": ["a"], "lat": [1.0], "lon": [2.0],
                       "date": pd.to_datetime(["2021-01-01"]),

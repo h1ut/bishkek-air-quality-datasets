@@ -22,6 +22,15 @@ def test_build_grid_ids_unique():
     assert len({c["cell_id"] for c in grid}) == len(grid)
 
 
+def test_build_grid_stays_within_bbox_uneven_spacing():
+    bbox = {"min_lon": 66.0, "max_lon": 80.0, "min_lat": 39.0, "max_lat": 52.0}
+    grid = common.build_grid(bbox, spacing=2.0)
+    assert all(c["lat"] <= 52.0 for c in grid)
+    assert all(c["lon"] <= 80.0 for c in grid)
+    coords = {(c["lat"], c["lon"]) for c in grid}
+    assert (39.0, 66.0) in coords
+
+
 def _hourly_frame(hours, value):
     idx = pd.date_range("2021-01-01", periods=hours, freq="h", tz="UTC")
     return pd.DataFrame({"time": idx, "pm2_5": [value] * hours,
@@ -85,6 +94,26 @@ def test_cached_get_retries_on_429(tmp_path, monkeypatch):
     monkeypatch.setattr(common.time, "sleep", lambda s: None)
     out = common.cached_get("https://x/z", {}, cache_dir=str(tmp_path))
     assert out == {"tries": "done"}
+
+
+def test_cached_get_raises_after_retry_exhaustion(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    class FakeResp:
+        status_code = 500
+        def json(self): return {}
+        def raise_for_status(self):
+            raise common.requests.HTTPError("500 Server Error")
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        calls["n"] += 1
+        return FakeResp()
+
+    monkeypatch.setattr(common.requests, "get", fake_get)
+    monkeypatch.setattr(common.time, "sleep", lambda s: None)
+    with pytest.raises(common.requests.HTTPError):
+        common.cached_get("https://x/fail", {}, cache_dir=str(tmp_path))
+    assert calls["n"] == 4  # 3 retries + final attempt, then raises (no hang)
 
 
 def test_quality_report_counts_implausible(tmp_path):

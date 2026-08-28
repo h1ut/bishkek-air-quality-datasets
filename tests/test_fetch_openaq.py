@@ -40,3 +40,6 @@ def test_fetch_city_merges_multiple_sensors_single_pollutant(fake_api):
     # Two sensors merged should average: (60+60)/2 = 60 for date 1, (80+80)/2 = 80 for date 2
     assert df.iloc[0]["pm2_5"] == 60.0
     assert df.iloc[1]["pm2_5"] == 80.0
+    # n_hours on the /daily endpoint is coverage-derived; the fixture carries no
+    # coverage field, so it is NA (combine is now "max", never a sensor count)
+    assert pd.isna(df.iloc[0]["n_hours_pm2_5"])

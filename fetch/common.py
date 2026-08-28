@@ -24,9 +24,12 @@ def load_config(path: str | None = None) -> dict:
     return cfg
 
 
-def _frange(start: float, stop: float, step: float) -> list[float]:
-    n = int(round((stop - start) / step))
-    return [round(start + i * step, 4) for i in range(n + 1)]
+def _frange(start, stop, step):
+    out, i = [], 0
+    while start + i * step <= stop + 1e-9:
+        out.append(round(start + i * step, 4))
+        i += 1
+    return out
 
 
 def build_grid(bbox: dict, spacing: float) -> list[dict]:
@@ -93,7 +96,6 @@ def cached_get(url, params, headers=None, cache_dir="data/raw/_cache", ttl_days=
             time.sleep(delay); delay *= 2; continue
         resp.raise_for_status()
         raise RuntimeError(f"GET {url} -> {resp.status_code}")
-    raise RuntimeError(f"GET {url} failed after retries")
 
 
 _LIMITS = {"pm2_5": (0, 1000), "pm10": (0, 2000), "sulphur_dioxide": (0, 5000),
