@@ -46,6 +46,8 @@ def main(argv=None):
         return 0
     Path("data/processed").mkdir(parents=True, exist_ok=True)
     df = fetch_bishkek(cfg)
+    if df.empty:
+        return 1
     df.to_csv("data/processed/airnow_bishkek_daily.csv", index=False)
     common.write_quality_report("airnow_bishkek", df, ["pm2_5"])
     print(f"[airnow] Bishkek: {len(df)} days")
