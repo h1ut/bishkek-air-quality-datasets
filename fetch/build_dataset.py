@@ -1,0 +1,126 @@
+from __future__ import annotations
+import argparse
+import glob
+from pathlib import Path
+import pandas as pd
+
+AQ_VARS = ["pm2_5", "pm10", "carbon_monoxide", "nitrogen_dioxide",
+           "sulphur_dioxide", "ozone", "aerosol_optical_depth", "dust"]
+WX_VARS = ["temperature_2m", "relative_humidity_2m", "wind_speed_10m",
+           "wind_direction_10m", "surface_pressure", "boundary_layer_height"]
+
+_DICT = {
+    "pm2_5": ("OpenAQ/AirNow or CAMS", "µg/m³", "hourly→daily mean; _max kept",
+              "ground = measured; grid = model, needs validation"),
+    "pm10": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
+    "carbon_monoxide": ("OpenAQ or CAMS", "µg/m³ (OpenAQ) / µg/m³ (CAMS)",
+                        "daily mean", "check unit per source; CAMS is µg/m³"),
+    "nitrogen_dioxide": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
+    "sulphur_dioxide": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
+    "ozone": ("OpenAQ or CAMS", "µg/m³", "daily mean", "as pm2_5"),
+    "aerosol_optical_depth": ("CAMS", "unitless", "daily mean", "model; column property"),
+    "dust": ("CAMS", "µg/m³", "daily mean", "model surface dust estimate"),
+    "temperature_2m": ("ERA5", "°C", "daily mean; _max kept", "reanalysis"),
+    "relative_humidity_2m": ("ERA5", "%", "daily mean", "reanalysis"),
+    "wind_speed_10m": ("ERA5", "m/s", "daily mean", "reanalysis"),
+    "wind_direction_10m": ("ERA5", "° from N", "daily vector mean", "reanalysis"),
+    "surface_pressure": ("ERA5", "hPa", "daily mean", "reanalysis"),
+    "boundary_layer_height": ("ERA5", "m", "daily mean", "reanalysis; key for winter inversions"),
+    "dangerous_day": ("derived", "bool", "pm2_5 > 55.4", "EPA Unhealthy daily"),
+    "exceeds_kg_limit": ("derived", "bool", "pm2_5 > 35", "Kyrgyz national daily limit"),
+}
+
+
+def build_stations(proc_dir="data/processed") -> pd.DataFrame:
+    frames = []
+    for fp in sorted(glob.glob(f"{proc_dir}/openaq_*_daily.csv")):
+        df = pd.read_csv(fp)
+        city = Path(fp).stem.replace("openaq_", "").replace("_daily", "")
+        df["station_key"] = city
+        for v in [c for c in df.columns if c in AQ_VARS]:
+            df[f"{v}_source"] = "openaq"
+        frames.append(df)
+    air = Path(proc_dir) / "airnow_bishkek_daily.csv"
+    if air.exists():
+        a = pd.read_csv(air)
+        a["station_key"] = "bishkek_us_embassy"
+        a["pm2_5_source"] = "airnow"
+        frames.append(a)
+    if not frames:
+        return pd.DataFrame()
+    out = pd.concat(frames, ignore_index=True)
+    out["date"] = pd.to_datetime(out["date"]).dt.strftime("%Y-%m-%d")
+    return out.sort_values(["station_key", "date"]).reset_index(drop=True)
+
+
+def build_grid_dataset(proc_dir="data/processed") -> pd.DataFrame:
+    g = pd.read_parquet(Path(proc_dir) / "openmeteo_grid_daily.parquet")
+    g["date"] = pd.to_datetime(g["date"])
+    if "pm2_5" in g:
+        g["dangerous_day"] = g["pm2_5"] > 55.4
+        g["exceeds_kg_limit"] = g["pm2_5"] > 35
+    front = [c for c in ["cell_id", "lat", "lon", "date"] if c in g]
+    rest = [c for c in g.columns if c not in front]
+    return g[front + rest]
+
+
+def to_long(grid_df) -> pd.DataFrame:
+    vars_present = [v for v in AQ_VARS + WX_VARS if v in grid_df.columns]
+    id_cols = [c for c in ["cell_id", "lat", "lon", "date"] if c in grid_df.columns]
+    return grid_df.melt(id_vars=id_cols, value_vars=vars_present,
+                        var_name="variable", value_name="value").dropna(subset=["value"])
+
+
+def write_data_dictionary(cols, path="dataset/data_dictionary.md") -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    rows = ["# Data dictionary", "",
+            "| column | source | unit | aggregation | caveat |",
+            "|---|---|---|---|---|"]
+    for c in cols:
+        if c.startswith("n_hours_"):
+            rows.append(f"| {c} | derived | count | hours present that day | <18 ⇒ day flagged |")
+            continue
+        if c in _DICT:
+            s, u, agg, cav = _DICT[c]
+        elif c.endswith("_max") and c[:-4] in _DICT:
+            s, u, _, cav = _DICT[c[:-4]]
+            agg = "daily max"
+        else:
+            s, u, agg, cav = ("TODO-REVIEW", "TODO-REVIEW", "TODO-REVIEW", "TODO-REVIEW")
+        rows.append(f"| {c} | {s} | {u} | {agg} | {cav} |")
+    Path(path).write_text("\n".join(rows), encoding="utf-8")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--proc-dir", default="data/processed")
+    args = ap.parse_args(argv)
+    Path("dataset").mkdir(exist_ok=True)
+    Path("kepler").mkdir(exist_ok=True)
+
+    stations = build_stations(args.proc_dir)
+    stations.to_csv("dataset/stations_daily.csv", index=False)
+
+    grid = build_grid_dataset(args.proc_dir)
+    grid.to_parquet("dataset/grid_daily.parquet", index=False)
+    to_long(grid).to_parquet("kepler/grid_daily_long.parquet", index=False)
+
+    # small committed sample: Bishkek cell + neighbours, first ISO week available
+    if not grid.empty:
+        bcell = grid.assign(d=((grid["lat"] - 42.8746) ** 2 + (grid["lon"] - 74.5698) ** 2)) \
+                    .sort_values("d")["cell_id"].iloc[0]
+        near = grid[grid["cell_id"].isin(grid["cell_id"].unique()[:9])]
+        first_week = sorted(grid["date"].unique())[:7]
+        near[near["date"].isin(first_week)].to_csv("dataset/grid_daily_sample.csv", index=False)
+
+    write_data_dictionary(list(dict.fromkeys(list(stations.columns) + list(grid.columns))))
+
+    print(f"stations_daily: {len(stations)} rows; grid_daily: {len(grid)} rows")
+    if not grid.empty and "dangerous_day" in grid:
+        bg = grid[grid["cell_id"] == bcell]
+        bg = bg.assign(season=bg["date"].dt.year.where(bg["date"].dt.month >= 7, bg["date"].dt.year - 1))
+        print(bg.groupby("season")["dangerous_day"].sum())
+
+
+if __name__ == "__main__":
+    main()
