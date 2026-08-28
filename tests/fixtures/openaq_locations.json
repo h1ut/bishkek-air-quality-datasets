@@ -4,5 +4,11 @@
    "sensors": [{"id": 4021, "parameter": {"name": "pm25", "units": "µg/m³"}}],
    "datetimeFirst": {"utc": "2021-01-01T00:00:00Z"},
    "datetimeLast": {"utc": "2025-12-31T23:00:00Z"},
+   "provider": {"name": "AirNow"}},
+  {"id": 2179, "name": "Another Station: Bishkek",
+   "coordinates": {"latitude": 42.8750, "longitude": 74.5700},
+   "sensors": [{"id": 4022, "parameter": {"name": "pm25", "units": "µg/m³"}}],
+   "datetimeFirst": {"utc": "2021-01-01T00:00:00Z"},
+   "datetimeLast": {"utc": "2025-12-31T23:00:00Z"},
    "provider": {"name": "AirNow"}}
 ]}

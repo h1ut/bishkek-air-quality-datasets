@@ -1,5 +1,6 @@
 from __future__ import annotations
 import argparse
+import sys
 from pathlib import Path
 import pandas as pd
 from fetch import common
@@ -60,8 +61,34 @@ def fetch_city(city, lat, lon, cfg) -> pd.DataFrame:
     if not frames:
         out = pd.DataFrame(columns=["date", "city"])
     else:
-        out = frames[0]
-        for f in frames[1:]:
+        # Group frames by pollutant name to handle multiple sensors per pollutant
+        frames_by_pollutant = {}
+        for frame in frames:
+            # Extract pollutant name (exclude date and n_hours_* columns)
+            pollutants = [c for c in frame.columns if c != "date" and not c.startswith("n_hours_")]
+            for poll in pollutants:
+                if poll not in frames_by_pollutant:
+                    frames_by_pollutant[poll] = []
+                frames_by_pollutant[poll].append(frame[["date", poll, f"n_hours_{poll}"]])
+
+        # Combine frames for the same pollutant
+        combined_frames = []
+        for pollutant in sorted(frames_by_pollutant.keys()):
+            poll_frames = frames_by_pollutant[pollutant]
+            if len(poll_frames) == 1:
+                combined_frames.append(poll_frames[0])
+            else:
+                # Concatenate all frames for this pollutant and aggregate by date
+                combined = pd.concat(poll_frames, ignore_index=False)
+                combined = combined.groupby("date", as_index=False).agg({
+                    pollutant: "mean",
+                    f"n_hours_{pollutant}": "sum"
+                })
+                combined_frames.append(combined)
+
+        # Outer merge all pollutant frames
+        out = combined_frames[0]
+        for f in combined_frames[1:]:
             out = out.merge(f, on="date", how="outer")
         out = out.sort_values("date").reset_index(drop=True)
     out["city"] = city
@@ -76,6 +103,7 @@ def main(argv=None):
     cfg = common.load_config(args.config)
     Path("data/processed").mkdir(parents=True, exist_ok=True)
     all_stations = []
+    cities_succeeded = 0
     for city, (lat, lon) in cfg["cities"].items():
         try:
             df = fetch_city(city, lat, lon, cfg)
@@ -87,12 +115,16 @@ def main(argv=None):
         common.write_quality_report(f"openaq_{city.lower()}", df, value_cols)
         all_stations.extend(getattr(fetch_city, "_stations", []))
         print(f"[openaq] {city}: {len(df)} days, params {value_cols}")
+        cities_succeeded += 1
     if all_stations:
         sdf = pd.DataFrame(all_stations).drop_duplicates("station_id")
         p = Path(STAGING)
         if p.exists():
             sdf = pd.concat([pd.read_csv(p), sdf]).drop_duplicates("station_id")
         sdf.to_csv(p, index=False)
+    # Exit non-zero only if every city failed
+    if cities_succeeded == 0 and len(cfg["cities"]) > 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
