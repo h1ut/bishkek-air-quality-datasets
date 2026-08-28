@@ -1,0 +1,6 @@
+requests>=2.32
+pandas>=2.2,<3
+pyarrow>=17
+folium>=0.17
+PyYAML>=6.0
+pytest>=8.0

@@ -1,0 +1,16 @@
+# Copy to fetch/config.yaml and fill secrets. config.yaml is gitignored.
+date_start: "2021-01-01"
+date_end: "2025-12-31"
+region_bbox:
+  min_lon: 66.0
+  max_lon: 80.0
+  min_lat: 39.0
+  max_lat: 52.0
+grid_spacing_deg: 0.5
+cities:
+  Bishkek: [42.8746, 74.5698]
+  Almaty: [43.2380, 76.9450]
+  Tashkent: [41.2995, 69.2401]
+  Astana: [51.1605, 71.4704]
+openaq_api_key: ""     # or set env OPENAQ_API_KEY
+airnow_api_key: ""     # or set env AIRNOW_API_KEY

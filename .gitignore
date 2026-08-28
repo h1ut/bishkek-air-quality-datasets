@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+fetch/config.yaml
+data/raw/
+data/processed/
+dataset/stations_daily.csv
+dataset/grid_daily.parquet
+dataset/grid_daily_long.parquet
+kepler/grid_daily_long.parquet
+.venv/
