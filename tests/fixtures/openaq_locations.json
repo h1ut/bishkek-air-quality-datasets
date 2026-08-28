@@ -1,0 +1,8 @@
+{"results": [
+  {"id": 2178, "name": "US Diplomatic Post: Bishkek",
+   "coordinates": {"latitude": 42.8746, "longitude": 74.5698},
+   "sensors": [{"id": 4021, "parameter": {"name": "pm25", "units": "µg/m³"}}],
+   "datetimeFirst": {"utc": "2021-01-01T00:00:00Z"},
+   "datetimeLast": {"utc": "2025-12-31T23:00:00Z"},
+   "provider": {"name": "AirNow"}}
+]}

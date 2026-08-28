@@ -1,0 +1,4 @@
+{"results": [
+  {"value": 60.0, "period": {"datetimeFrom": {"utc": "2021-01-01T00:00:00Z"}}},
+  {"value": 80.0, "period": {"datetimeFrom": {"utc": "2021-01-02T00:00:00Z"}}}
+]}
