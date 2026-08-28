@@ -28,6 +28,13 @@ _DICT = {
     "boundary_layer_height": ("ERA5", "m", "daily mean", "reanalysis; key for winter inversions"),
     "dangerous_day": ("derived", "bool", "pm2_5 > 55.4", "EPA Unhealthy daily"),
     "exceeds_kg_limit": ("derived", "bool", "pm2_5 > 35", "Kyrgyz national daily limit"),
+    "cell_id": ("derived", "id", "grid cell key `<lat:.4f>_<lon:.4f>`", "—"),
+    "lat": ("grid/station", "degrees", "point coordinate", "—"),
+    "lon": ("grid/station", "degrees", "point coordinate", "—"),
+    "date": ("derived", "date", "UTC calendar day", "—"),
+    "sparse": ("derived", "bool", "any source had <18 h that day", "flag, not a value"),
+    "station_key": ("derived", "id", "station/city identifier", "—"),
+    "city": ("OpenAQ", "name", "source city label", "—"),
 }
 
 
@@ -82,6 +89,9 @@ def write_data_dictionary(cols, path="dataset/data_dictionary.md") -> None:
             continue
         if c in _DICT:
             s, u, agg, cav = _DICT[c]
+        elif c.endswith("_source"):
+            s, u, agg, cav = ("derived", "text",
+                              f"which source supplied `{c[:-7]}` for this row", "provenance")
         elif c.endswith("_max") and c[:-4] in _DICT:
             s, u, _, cav = _DICT[c[:-4]]
             agg = "daily max"
@@ -105,13 +115,25 @@ def main(argv=None):
     grid.to_parquet("dataset/grid_daily.parquet", index=False)
     to_long(grid).to_parquet("kepler/grid_daily_long.parquet", index=False)
 
-    # small committed sample: Bishkek cell + neighbours, first ISO week available
+    # small committed sample: Bishkek cell + 8 nearest neighbours, first week with AQ data
     if not grid.empty:
-        bcell = grid.assign(d=((grid["lat"] - 42.8746) ** 2 + (grid["lon"] - 74.5698) ** 2)) \
-                    .sort_values("d")["cell_id"].iloc[0]
-        near = grid[grid["cell_id"].isin(grid["cell_id"].unique()[:9])]
-        first_week = sorted(grid["date"].unique())[:7]
-        near[near["date"].isin(first_week)].to_csv("dataset/grid_daily_sample.csv", index=False)
+        ranked = grid.assign(d=((grid["lat"] - 42.8746) ** 2 + (grid["lon"] - 74.5698) ** 2)) \
+                     .sort_values("d")
+        bcell = ranked["cell_id"].iloc[0]
+        near_cells = list(dict.fromkeys(ranked["cell_id"]))[:9]
+        bcell_pm = grid[grid["cell_id"] == bcell]
+        if "pm2_5" in grid:
+            bcell_pm = bcell_pm[bcell_pm["pm2_5"].notna()]
+        else:
+            bcell_pm = bcell_pm.iloc[0:0]
+        if len(bcell_pm):
+            start = bcell_pm["date"].min()
+            window = sorted(grid.loc[grid["date"] >= start, "date"].unique())[:7]
+        else:
+            window = sorted(grid["date"].unique())[:7]
+            print("note: grid sample predates CAMS AQ coverage (no non-null pm2_5 in Bishkek cell)")
+        near = grid[grid["cell_id"].isin(near_cells) & grid["date"].isin(window)]
+        near.to_csv("dataset/grid_daily_sample.csv", index=False)
 
     write_data_dictionary(list(dict.fromkeys(list(stations.columns) + list(grid.columns))))
 

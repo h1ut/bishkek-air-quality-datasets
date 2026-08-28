@@ -2,10 +2,10 @@
 
 | column | source | unit | aggregation | caveat |
 |---|---|---|---|---|
-| cell_id | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW |
-| lat | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW |
-| lon | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW |
-| date | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW |
+| cell_id | derived | id | grid cell key `<lat:.4f>_<lon:.4f>` | — |
+| lat | grid/station | degrees | point coordinate | — |
+| lon | grid/station | degrees | point coordinate | — |
+| date | derived | date | UTC calendar day | — |
 | n_hours_pm2_5 | derived | count | hours present that day | <18 ⇒ day flagged |
 | pm2_5 | OpenAQ/AirNow or CAMS | µg/m³ | hourly→daily mean; _max kept | ground = measured; grid = model, needs validation |
 | pm2_5_max | OpenAQ/AirNow or CAMS | µg/m³ | daily max | ground = measured; grid = model, needs validation |
@@ -47,6 +47,6 @@
 | n_hours_boundary_layer_height | derived | count | hours present that day | <18 ⇒ day flagged |
 | boundary_layer_height | ERA5 | m | daily mean | reanalysis; key for winter inversions |
 | boundary_layer_height_max | ERA5 | m | daily max | reanalysis; key for winter inversions |
-| sparse | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW | TODO-REVIEW |
+| sparse | derived | bool | any source had <18 h that day | flag, not a value |
 | dangerous_day | derived | bool | pm2_5 > 55.4 | EPA Unhealthy daily |
 | exceeds_kg_limit | derived | bool | pm2_5 > 35 | Kyrgyz national daily limit |
