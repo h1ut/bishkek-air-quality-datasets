@@ -1,0 +1,6 @@
+[
+  {"DateObserved": "2021-01-01", "HourObserved": 6, "ParameterName": "PM2.5",
+   "Value": 55.4, "Unit": "UG/M3", "Latitude": 42.87, "Longitude": 74.57},
+  {"DateObserved": "2021-01-01", "HourObserved": 7, "ParameterName": "PM2.5",
+   "Value": 70.0, "Unit": "UG/M3", "Latitude": 42.87, "Longitude": 74.57}
+]
