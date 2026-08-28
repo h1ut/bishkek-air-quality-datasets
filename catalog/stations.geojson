@@ -1,0 +1,18 @@
+{"type": "FeatureCollection", "features": [
+  {"type": "Feature", "geometry": {"type": "Point", "coordinates": [74.5936, 42.9006]},
+   "properties": {"station_id": "us-embassy-bishkek", "name": "US Embassy Bishkek",
+     "network": "AirNow", "operator": "US EPA / State Dept",
+     "pollutants": "pm2_5", "met_variables": "",
+     "period_start": "2019-10-01", "period_end": "present", "status": "active",
+     "location_precision": "approx", "access_url": "https://www.airnow.gov/international/us-embassies-and-consulates/#Kyrgyzstan$Bishkek",
+     "coord_source": "US Embassy Bishkek street address geocode (171 Prospekt Mira)",
+     "quality_grade": "A", "notes": "Reference monitor; exact sensor location not published"}},
+  {"type": "Feature", "geometry": {"type": "Point", "coordinates": [74.6122, 42.8760]},
+   "properties": {"station_id": "kghm-ref-bishkek", "name": "Kyrgyzhydromet reference station (Bishkek)",
+     "network": "Kyrgyzhydromet", "operator": "Agency for Hydrometeorology (MoES KR)",
+     "pollutants": "so2|no2|co|pm10|pm2_5|tsp", "met_variables": "",
+     "period_start": "", "period_end": "present", "status": "active",
+     "location_precision": "city-centroid", "access_url": "https://meteo.kg/",
+     "coord_source": "approx - Kyrgyzhydromet HQ area; confirm during implementation",
+     "quality_grade": "B", "notes": "Historical data only via quarterly PDF bulletins"}}
+]}
