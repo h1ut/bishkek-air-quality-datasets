@@ -2,7 +2,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-_REQUIRED_IDS = {"epa_aqi_unhealthy_pm25", "kg_mpc_daily_pm25"}
+_REQUIRED_IDS = {"epa_aqi_unhealthy_pm25", "kg_mpc_daily_pm25", "kg_mpc_daily_co"}
 _KINDS = {"alert", "limit"}
 _COLS = ["standard_id", "authority", "pollutant", "averaging_period",
          "value_ug_m3", "kind", "citation", "url", "notes"]
