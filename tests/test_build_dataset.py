@@ -45,3 +45,33 @@ def test_to_long_shape():
     long = bd.to_long(g)
     assert set(long["variable"]) == {"pm2_5", "pm10"}
     assert len(long) == 2
+
+
+def test_grid_flags_use_standards_not_literals(tmp_path):
+    g = pd.DataFrame({"cell_id": ["a", "a", "a"], "lat": [43.0]*3, "lon": [75.0]*3,
+                      "date": pd.to_datetime(["2022-08-04", "2022-08-05", "2022-08-06"]),
+                      "pm2_5": [30.0, 40.0, None], "n_hours_pm2_5": [24, 24, 0]})
+    g.to_parquet(tmp_path / "openmeteo_grid_daily.parquet", index=False)
+    fake_std = {"epa_aqi_unhealthy_pm25": 55.4, "kg_mpc_daily_pm25": 35.0}
+    out = bd.build_grid_dataset(str(tmp_path), standards=fake_std).set_index("date")
+    assert out.loc["2022-08-04", "exceeds_kg_limit"] == False
+    assert out.loc["2022-08-05", "exceeds_kg_limit"] == True
+    assert out.loc["2022-08-05", "dangerous_day"] == False
+    assert pd.isna(out.loc["2022-08-06", "exceeds_kg_limit"])
+
+
+def test_build_stations_gets_nullable_flags():
+    df = bd.build_stations(str(FIX), standards={"epa_aqi_unhealthy_pm25": 55.4,
+                                                "kg_mpc_daily_pm25": 35.0})
+    assert "dangerous_day" in df.columns and "exceeds_kg_limit" in df.columns
+    b = df[df["station_key"] == "bishkek_us_embassy"].set_index("date")
+    # fixture airnow row for 2021-01-02 is 120.0 -> both flags True
+    assert b.loc["2021-01-02", "dangerous_day"] == True
+
+
+def test_build_grid_raises_when_standard_id_missing(tmp_path):
+    g = pd.DataFrame({"cell_id": ["a"], "lat": [43.0], "lon": [75.0],
+                      "date": pd.to_datetime(["2022-08-04"]), "pm2_5": [30.0]})
+    g.to_parquet(tmp_path / "openmeteo_grid_daily.parquet", index=False)
+    with pytest.raises(KeyError):
+        bd.build_grid_dataset(str(tmp_path), standards={"kg_mpc_daily_pm25": 35.0})

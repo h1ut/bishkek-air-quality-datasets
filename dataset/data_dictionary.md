@@ -11,11 +11,11 @@
 | carbon_monoxide_source | derived | text | which source supplied `carbon_monoxide` for this row | provenance |
 | cell_id | derived | id | grid cell key `<lat:.4f>_<lon:.4f>` | — |
 | city | OpenAQ | name | source city label | — |
-| dangerous_day | derived | bool | pm2_5 > 55.4 | EPA Unhealthy daily; <NA> where pm2_5 is missing (not the same as False) |
+| dangerous_day | derived | boolean | pm2_5 > standards.epa_aqi_unhealthy_pm25 | US EPA AQI Unhealthy lower bound (24-h PM2.5 55.4 µg/m³); <NA> where pm2_5 is missing (not the same as False) |
 | date | derived | date | UTC calendar day | — |
 | dust | CAMS | µg/m³ | daily mean | model surface dust estimate |
 | dust_max | CAMS | µg/m³ | daily max | model surface dust estimate |
-| exceeds_kg_limit | derived | bool | pm2_5 > 35 | Kyrgyz national daily limit; <NA> where pm2_5 is missing (not the same as False) |
+| exceeds_kg_limit | derived | boolean | pm2_5 > standards.kg_mpc_daily_pm25 | Kyrgyz ПДК среднесуточная, ПП КР №201 (2016) поз. 613, 35 µg/m³; <NA> where pm2_5 is missing (not the same as False) |
 | lat | grid/station | degrees | point coordinate | — |
 | lon | grid/station | degrees | point coordinate | — |
 | n_hours_aerosol_optical_depth | derived | count | hours present that day | <18 ⇒ day flagged |

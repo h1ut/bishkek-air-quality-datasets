@@ -3,6 +3,7 @@ import argparse
 import glob
 from pathlib import Path
 import pandas as pd
+from catalog.standards import load_standards, require
 
 AQ_VARS = ["pm2_5", "pm10", "carbon_monoxide", "nitrogen_dioxide",
            "sulphur_dioxide", "ozone", "aerosol_optical_depth", "dust"]
@@ -42,10 +43,14 @@ _DICT = {
     "wind_direction_10m": ("ERA5", "° from N", "daily vector mean", "reanalysis"),
     "surface_pressure": ("ERA5", "hPa", "daily mean", "reanalysis"),
     "boundary_layer_height": ("ERA5", "m", "daily mean", "reanalysis; key for winter inversions"),
-    "dangerous_day": ("derived", "bool", "pm2_5 > 55.4",
-                      "EPA Unhealthy daily; <NA> where pm2_5 is missing (not the same as False)"),
-    "exceeds_kg_limit": ("derived", "bool", "pm2_5 > 35",
-                         "Kyrgyz national daily limit; <NA> where pm2_5 is missing (not the same as False)"),
+    "dangerous_day": ("derived", "boolean",
+                      "pm2_5 > standards.epa_aqi_unhealthy_pm25",
+                      "US EPA AQI Unhealthy lower bound (24-h PM2.5 55.4 µg/m³); "
+                      "<NA> where pm2_5 is missing (not the same as False)"),
+    "exceeds_kg_limit": ("derived", "boolean",
+                         "pm2_5 > standards.kg_mpc_daily_pm25",
+                         "Kyrgyz ПДК среднесуточная, ПП КР №201 (2016) поз. 613, 35 µg/m³; "
+                         "<NA> where pm2_5 is missing (not the same as False)"),
     "cell_id": ("derived", "id", "grid cell key `<lat:.4f>_<lon:.4f>`", "—"),
     "lat": ("grid/station", "degrees", "point coordinate", "—"),
     "lon": ("grid/station", "degrees", "point coordinate", "—"),
@@ -56,7 +61,7 @@ _DICT = {
 }
 
 
-def build_stations(proc_dir="data/processed") -> pd.DataFrame:
+def build_stations(proc_dir="data/processed", standards=None) -> pd.DataFrame:
     frames = []
     for fp in sorted(glob.glob(f"{proc_dir}/openaq_*_daily.csv")):
         df = pd.read_csv(fp)
@@ -75,15 +80,25 @@ def build_stations(proc_dir="data/processed") -> pd.DataFrame:
         return pd.DataFrame()
     out = pd.concat(frames, ignore_index=True)
     out["date"] = pd.to_datetime(out["date"]).dt.strftime("%Y-%m-%d")
+    if "pm2_5" in out.columns:
+        std = standards if standards is not None else load_standards()
+        danger = require(std, "epa_aqi_unhealthy_pm25")
+        kg = require(std, "kg_mpc_daily_pm25")
+        pm = pd.to_numeric(out["pm2_5"], errors="coerce")
+        out["dangerous_day"] = (pm > danger).astype("boolean").mask(pm.isna())
+        out["exceeds_kg_limit"] = (pm > kg).astype("boolean").mask(pm.isna())
     return out.sort_values(["station_key", "date"]).reset_index(drop=True)
 
 
-def build_grid_dataset(proc_dir="data/processed") -> pd.DataFrame:
+def build_grid_dataset(proc_dir="data/processed", standards=None) -> pd.DataFrame:
+    std = standards if standards is not None else load_standards()
     g = pd.read_parquet(Path(proc_dir) / "openmeteo_grid_daily.parquet")
     g["date"] = pd.to_datetime(g["date"])
     if "pm2_5" in g:
-        g["dangerous_day"] = (g["pm2_5"] > 55.4).astype("boolean").mask(g["pm2_5"].isna())
-        g["exceeds_kg_limit"] = (g["pm2_5"] > 35).astype("boolean").mask(g["pm2_5"].isna())
+        danger = require(std, "epa_aqi_unhealthy_pm25")
+        kg = require(std, "kg_mpc_daily_pm25")
+        g["dangerous_day"] = (g["pm2_5"] > danger).astype("boolean").mask(g["pm2_5"].isna())
+        g["exceeds_kg_limit"] = (g["pm2_5"] > kg).astype("boolean").mask(g["pm2_5"].isna())
     front = [c for c in ["cell_id", "lat", "lon", "date"] if c in g]
     rest = [c for c in g.columns if c not in front]
     return g[front + rest]
@@ -126,10 +141,11 @@ def main(argv=None):
     Path("dataset").mkdir(exist_ok=True)
     Path("kepler").mkdir(exist_ok=True)
 
-    stations = build_stations(args.proc_dir)
+    std = load_standards()
+    stations = build_stations(args.proc_dir, standards=std)
     stations.to_csv("dataset/stations_daily.csv", index=False)
 
-    grid = build_grid_dataset(args.proc_dir)
+    grid = build_grid_dataset(args.proc_dir, standards=std)
     grid.to_parquet("dataset/grid_daily.parquet", index=False)
     to_long(grid).to_parquet("kepler/grid_daily_long.parquet", index=False)
 
