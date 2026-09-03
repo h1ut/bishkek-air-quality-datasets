@@ -5,6 +5,8 @@ from pathlib import Path
 import folium
 import pandas as pd
 
+from qa.geo import nearest_cell_id, BISHKEK_LAT, BISHKEK_LON  # noqa: F401
+
 GRADE_COLOR = {"A": "green", "B": "orange", "C": "red"}
 COMPARISON = {"Almaty", "Tashkent", "Astana"}
 
@@ -75,13 +77,12 @@ def build(stations_path, studies_path, grid_path=None,
         grid = pd.read_parquet(grid_path)
         grid["date"] = pd.to_datetime(grid["date"])
         if snapshot_dates is None:
-            if "dangerous_day" in grid:
-                try:
-                    worst = grid.groupby("date")[snapshot_var].mean().idxmax()
-                    snapshot_dates = [worst]
-                except (ValueError, KeyError):
-                    # idxmax() raises ValueError if the series is all-NaN
-                    snapshot_dates = [grid["date"].max()]
+            daily = grid.groupby("date")[snapshot_var].mean()
+            heating = daily[[d.month in (11, 12, 1, 2, 3) for d in daily.index]]
+            if heating.notna().any():
+                snapshot_dates = [heating.idxmax()]
+            elif daily.notna().any():
+                snapshot_dates = [daily.idxmax()]
             else:
                 snapshot_dates = [grid["date"].max()]
         vmax = grid[snapshot_var].quantile(0.98)
