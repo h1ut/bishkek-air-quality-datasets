@@ -1,0 +1,8 @@
+bishkek_annual_pm25:
+  low: 30
+  high: 70
+  cite: "WHO/IQAir/World Bank cite ~40-50 ug/m3 for the Bishkek airshed (annual)"
+isaev_table4_exceed35:
+  low: 52
+  high: 93
+  cite: "Isaev et al. 2022, Aerosol Air Qual. Res., doi:10.4209/aaqr.210336, Table 4 (days > 35 ug/m3 per heating season)"

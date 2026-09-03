@@ -1,0 +1,3 @@
+station_key,date,pm2_5,n_hours_pm2_5,dangerous_day,exceeds_kg_limit
+bishkek,2022-12-01,80.0,24,True,True
+bishkek,2022-12-02,10.0,24,False,False

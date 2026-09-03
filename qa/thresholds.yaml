@@ -1,0 +1,33 @@
+completeness:
+  warn_pct: 80
+  fail_pct: 50
+gap:
+  warn_days: 7
+agreement:
+  min_overlap_days: 30
+  ground_r_warn: 0.80
+  ground_bias_warn: 10.0
+  ground_r_fail: 0.50
+  model_r_warn: 0.40
+seasonality:
+  min_winter_summer_ratio: 2.0
+plausibility:
+  fail_fraction: 0.001
+ranges:
+  pm2_5: [0, 1000]
+  pm10: [0, 2000]
+  sulphur_dioxide: [0, 5000]
+  nitrogen_dioxide: [0, 5000]
+  carbon_monoxide: [0, 100000]
+  ozone: [0, 1000]
+  aerosol_optical_depth: [0, 5]
+  dust: [0, 2000]
+  temperature_2m: [-45, 50]
+  relative_humidity_2m: [0, 100]
+  wind_speed_10m: [0, 60]
+  wind_direction_10m: [0, 360]
+  surface_pressure: [600, 1050]
+  boundary_layer_height: [0, 5000]
+  temperature: [-45, 50]
+  relative_humidity: [0, 100]
+cams_boundary_date: "2022-08-04"
