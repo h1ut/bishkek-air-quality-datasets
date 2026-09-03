@@ -41,8 +41,14 @@ def fetch_bishkek(cfg) -> pd.DataFrame:
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
+    ap.add_argument("--start", default=None)
+    ap.add_argument("--end", default=None)
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
+    if args.start:
+        cfg["date_start"] = args.start
+    if args.end:
+        cfg["date_end"] = args.end
     if not cfg.get("airnow_api_key"):
         print(FALLBACK)
         return 0
