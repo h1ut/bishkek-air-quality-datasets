@@ -41,3 +41,23 @@ def test_completeness_reports_low_season_as_warn():
     out = {f.check_id: f for f in plausibility.run(_ctx(grid=grid))}
     assert out["plausibility.completeness"].level in ("WARN", "FAIL")
     assert out["plausibility.completeness"].table is not None
+
+
+def test_duplicate_keys_stations_flags_dupe_pair():
+    stations = pd.DataFrame({
+        "station_key": ["s1", "s1", "s2"],
+        "date": pd.to_datetime(["2022-08-04", "2022-08-04", "2022-08-04"]),
+        "pm2_5": [10.0, 11.0, 12.0],
+    })
+    out = {f.check_id: f for f in plausibility.run(_ctx(stations=stations))}
+    assert out["plausibility.duplicate_keys_stations"].level == "FAIL"
+
+
+def test_duplicate_keys_stations_clean_frame_passes():
+    stations = pd.DataFrame({
+        "station_key": ["s1", "s1", "s2"],
+        "date": pd.to_datetime(["2022-08-04", "2022-08-05", "2022-08-04"]),
+        "pm2_5": [10.0, 11.0, 12.0],
+    })
+    out = {f.check_id: f for f in plausibility.run(_ctx(stations=stations))}
+    assert out["plausibility.duplicate_keys_stations"].level == "PASS"

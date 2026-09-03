@@ -4,8 +4,6 @@ import pandas as pd
 from qa.checks import Finding
 from qa.loaders import AQ_VARS, WX_VARS
 
-_HEATING_MONTHS = {11, 12, 1, 2, 3}
-
 
 def _ranges(cid, df, ranges, fail_frac):
     if df is None or df.empty:
@@ -69,7 +67,7 @@ def _dupes(cid, df, keys):
         return Finding(cid, "INFO", "frame empty")
     have = [k for k in keys if k in df.columns]
     if len(have) < len(keys):
-        return Finding(cid, "INFO", f"key columns absent")
+        return Finding(cid, "INFO", f"key columns absent: {set(keys) - set(have)}")
     n = int(df.duplicated(subset=have).sum())
     return Finding(cid, "FAIL" if n else "PASS",
                    f"{n} duplicate {have}" if n else f"{have} unique")
@@ -126,6 +124,7 @@ def run(ctx) -> list[Finding]:
         _completeness("plausibility.completeness", ctx.grid, "cell_id",
                       comp.get("warn_pct", 80), comp.get("fail_pct", 50)),
         _dupes("plausibility.duplicate_keys", ctx.grid, ["cell_id", "date"]),
+        _dupes("plausibility.duplicate_keys_stations", ctx.stations, ["station_key", "date"]),
         _gaps("plausibility.date_gaps", ctx.grid, "cell_id",
               th.get("gap", {}).get("warn_days", 7)),
         _cams_boundary("plausibility.cams_boundary", ctx.grid, ctx.bishkek_cell_id,
