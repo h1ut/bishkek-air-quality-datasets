@@ -60,6 +60,11 @@ def validate(catalog_dir=None) -> list[str]:
         g = f.get("geometry", {})
         if g.get("type") != "Point" or len(g.get("coordinates", [])) != 2:
             problems.append(f"{sid}: geometry not a 2-coord Point")
+    from catalog import standards as _std
+    try:
+        problems.extend(_std.problems(HERE / "standards.csv"))
+    except FileNotFoundError:
+        problems.append("standards.csv: file missing")
     return problems
 
 

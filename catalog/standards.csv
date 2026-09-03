@@ -1,0 +1,14 @@
+standard_id,authority,pollutant,averaging_period,value_ug_m3,kind,citation,url,notes
+epa_aqi_unhealthy_pm25,US EPA,pm2_5,24h,55.4,alert,"US EPA Air Quality Index (AQI) — Technical Assistance Document, PM2.5 'Unhealthy' category lower breakpoint (2024 revision retained 55.4)",https://www.airnow.gov/aqi/aqi-basics/,Health-action category boundary; not a regulatory limit. Primary 'dangerous day' threshold for the paper.
+kg_mpc_daily_pm25,Kyrgyzstan,pm2_5,24h,35,limit,"ПП КР №201 от 11.04.2016, Гигиенические нормативы ПДК, поз. 613 (0,035 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,Numerically equal to US EPA NAAQS 24-h; cited here as the Kyrgyz national daily limit.
+kg_mpc_annual_pm25,Kyrgyzstan,pm2_5,1y,25,limit,"ПП КР №201 от 11.04.2016, поз. 613 примечание (0,025 мг/м3 среднегодовая)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_pm10,Kyrgyzstan,pm10,24h,60,limit,"ПП КР №201 от 11.04.2016, поз. 612 (0,06 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_annual_pm10,Kyrgyzstan,pm10,1y,40,limit,"ПП КР №201 от 11.04.2016, поз. 612 примечание (0,04 мг/м3 среднегодовая)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_so2,Kyrgyzstan,sulphur_dioxide,24h,50,limit,"ПП КР №201 от 11.04.2016, поз. 463 (0,05 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_no2,Kyrgyzstan,nitrogen_dioxide,24h,40,limit,"ПП КР №201 от 11.04.2016, поз. 4 (0,04 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_no,Kyrgyzstan,nitrogen_oxide,24h,60,limit,"ПП КР №201 от 11.04.2016, поз. 6 (0,06 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_co,Kyrgyzstan,carbon_monoxide,24h,3000,limit,"ПП КР №201 от 11.04.2016, поз. 521 (3 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,Value in ug/m3 (3 mg/m3).
+kg_mpc_daily_o3,Kyrgyzstan,ozone,24h,30,limit,"ПП КР №201 от 11.04.2016, поз. 387 (0,03 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_nh3,Kyrgyzstan,ammonia,24h,40,limit,"ПП КР №201 от 11.04.2016, поз. 103 (0,04 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_hcoh,Kyrgyzstan,formaldehyde,24h,3,limit,"ПП КР №201 от 11.04.2016, поз. 541 (0,003 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
+kg_mpc_daily_hcn,Kyrgyzstan,hydrogen_cyanide,24h,1,limit,"ПП КР №201 от 11.04.2016 (0,001 мг/м3 среднесуточная)",https://faolex.fao.org/docs/pdf/kyr179875.pdf,
