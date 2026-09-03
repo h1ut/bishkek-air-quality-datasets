@@ -50,47 +50,56 @@ def pair_stats(a: pd.Series, b: pd.Series) -> dict:
 
 
 _GROUND = {"airnow", "openaq", "zenodo"}
+_ORDER = {"PASS": 0, "INFO": 1, "WARN": 2, "FAIL": 3}
 
 
 def run(ctx) -> list[Finding]:
     th = ctx.thresholds.get("agreement", {})
     minov = th.get("min_overlap_days", 30)
     series = bishkek_series(ctx)
-    if len(series) < 2:
-        return [Finding("agreement.pairwise", "INFO",
-                        f"only {len(series)} Bishkek pm2_5 source(s) — need >= 2")]
-    names = sorted(series)
-    rows, worst = [], "PASS"
-    order = {"PASS": 0, "INFO": 1, "WARN": 2, "FAIL": 3}
-    for i in range(len(names)):
-        for j in range(i + 1, len(names)):
-            a, b = names[i], names[j]
-            st = pair_stats(series[a], series[b])
-            rows.append(f"| {a} vs {b} | {st['n']} | {st['r']:.3f} | {st['bias']:.2f} | "
-                        f"{st['rmse']:.2f} | {st['mae']:.2f} |")
-            if st["n"] < minov:
-                continue
-            both_ground = a in _GROUND and b in _GROUND
-            if both_ground:
-                if st["r"] < th.get("ground_r_fail", 0.5):
-                    worst = "FAIL"
-                elif (st["r"] < th.get("ground_r_warn", 0.8)
-                      or abs(st["bias"]) > th.get("ground_bias_warn", 10.0)):
-                    worst = "FAIL" if worst == "FAIL" else "WARN"
-            else:  # model vs ground
-                if st["r"] < th.get("model_r_warn", 0.4) or st["bias"] > 0:
-                    worst = "FAIL" if worst == "FAIL" else "WARN"
-    table = ("| pair | n | Pearson r | bias (a-b) | RMSE | MAE |\n|---|---|---|---|---|---|\n"
-             + "\n".join(rows))
-    summ = ("ground pairs must agree closely; model (cams_grid) is expected to "
-            "under-estimate — a positive model bias or low r is flagged")
-    findings = [Finding("agreement.pairwise", worst if worst != "PASS" else "PASS", summ, table)]
+    findings = []
 
-    danger = ctx.standards["epa_aqi_unhealthy_pm25"]
-    kg = ctx.standards["kg_mpc_daily_pm25"]
-    erows = [f"| {n} | {int((s > danger).sum())} | {int((s > kg).sum())} | {len(s)} |"
-             for n, s in series.items()]
-    findings.append(Finding("agreement.exceedance_counts", "INFO",
-        "days each Bishkek source calls dangerous (>55.4) / over the KG limit (>35)",
-        "| source | days >55.4 | days >35 | total days |\n|---|---|---|---|\n" + "\n".join(erows)))
+    if len(series) < 2:
+        findings.append(Finding("agreement.pairwise", "INFO",
+                                f"only {len(series)} Bishkek pm2_5 source(s) — need >= 2"))
+    else:
+        names = sorted(series)
+        rows, worst = [], "PASS"
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                a, b = names[i], names[j]
+                st = pair_stats(series[a], series[b])
+                rows.append(f"| {a} vs {b} | {st['n']} | {st['r']:.3f} | {st['bias']:.2f} | "
+                            f"{st['rmse']:.2f} | {st['mae']:.2f} |")
+                if st["n"] < minov:
+                    continue
+                both_ground = a in _GROUND and b in _GROUND
+                if both_ground:
+                    if st["r"] < th.get("ground_r_fail", 0.5):
+                        worst = "FAIL"
+                    elif (st["r"] < th.get("ground_r_warn", 0.8)
+                          or abs(st["bias"]) > th.get("ground_bias_warn", 10.0)):
+                        worst = max(worst, "WARN", key=_ORDER.get)
+                else:  # model vs ground — orient bias as model minus ground
+                    model_name = a if a == "cams_grid" else b
+                    ground_name = b if a == "cams_grid" else a
+                    mb = pair_stats(series[model_name], series[ground_name])["bias"]
+                    if st["r"] < th.get("model_r_warn", 0.4) or mb > 0:
+                        worst = max(worst, "WARN", key=_ORDER.get)
+                    else:
+                        worst = max(worst, "INFO", key=_ORDER.get)
+        table = ("| pair | n | Pearson r | bias (a-b) | RMSE | MAE |\n|---|---|---|---|---|---|\n"
+                 + "\n".join(rows))
+        summ = ("ground pairs must agree closely; model (cams_grid) is expected to "
+                "under-estimate — a positive model bias or low r is flagged")
+        findings.append(Finding("agreement.pairwise", worst, summ, table))
+
+    if len(series) >= 1:
+        danger = ctx.standards["epa_aqi_unhealthy_pm25"]
+        kg = ctx.standards["kg_mpc_daily_pm25"]
+        erows = [f"| {n} | {int((s > danger).sum())} | {int((s > kg).sum())} | {len(s)} |"
+                 for n, s in series.items()]
+        findings.append(Finding("agreement.exceedance_counts", "INFO",
+            "days each Bishkek source calls dangerous (>55.4) / over the KG limit (>35)",
+            "| source | days >55.4 | days >35 | total days |\n|---|---|---|---|\n" + "\n".join(erows)))
     return findings
