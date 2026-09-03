@@ -34,3 +34,24 @@ def test_seasonal_cycle_ground_flat_is_fail():
     an = pd.DataFrame({"date": idx, "pm2_5": [40.0] * len(idx)})  # flat -> ratio 1.0
     out = {f.check_id: f for f in reference.run(_ctx(airnow=an))}
     assert out["reference.seasonal_cycle"].level == "FAIL"
+
+
+def test_annual_mean_in_band_is_info():
+    idx = pd.date_range("2023-01-01", "2023-12-31")
+    an = pd.DataFrame({"date": idx, "pm2_5": [50.0] * len(idx)})  # mean 50 -> inside [30,70]
+    out = {f.check_id: f for f in reference.run(_ctx(airnow=an))}
+    assert out["reference.annual_mean"].level == "INFO"
+
+
+def test_exceedance_days_in_range_is_info():
+    # one heating season (Nov 2022 - Mar 2023) with a plausible in-range count of days >35
+    idx = pd.date_range("2022-11-01", "2023-03-31")
+    vals = [80.0 if i % 2 == 0 else 20.0 for i in range(len(idx))]  # ~half of ~151 days -> ~75, inside 52-93
+    an = pd.DataFrame({"date": idx, "pm2_5": vals})
+    out = {f.check_id: f for f in reference.run(_ctx(airnow=an))}
+    assert out["reference.exceedance_days"].level == "INFO"
+
+
+def test_seasonal_cycle_no_series_no_grid_is_info():
+    out = {f.check_id: f for f in reference.run(_ctx())}  # no airnow, empty grid
+    assert out["reference.seasonal_cycle"].level == "INFO"

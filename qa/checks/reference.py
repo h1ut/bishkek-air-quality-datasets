@@ -23,7 +23,7 @@ def _annual_mean(cid, name, series, ref):
         return Finding(cid, "INFO", "no Bishkek ground series")
     band = ref.get("bishkek_annual_pm25", {})
     lo, hi = band.get("low", 0), band.get("high", 1e9)
-    rows, level = [], "PASS"
+    rows, level = [], "INFO"
     for yr, g in series.groupby(series.index.year):
         m = float(g.mean())
         outb = m < lo or m > hi
@@ -45,7 +45,7 @@ def _exceedance_days(cid, name, series, std, ref):
     df = pd.DataFrame({"pm2_5": series})
     df["season"] = [heating_season(t) for t in df.index]
     df = df[[m in (11, 12, 1, 2, 3) for m in df.index.month]]
-    rows, level = [], "PASS"
+    rows, level = [], "INFO"
     for s, g in df.groupby("season"):
         d55 = int((g["pm2_5"] > danger).sum())
         d35 = int((g["pm2_5"] > kg).sum())
@@ -62,6 +62,7 @@ def _exceedance_days(cid, name, series, std, ref):
 
 def _seasonal_cycle(cid, name, series, grid, cell_id, min_ratio):
     findings_level = "PASS"
+    evaluated = False
     parts = []
 
     def ratio(s):
@@ -70,12 +71,15 @@ def _seasonal_cycle(cid, name, series, grid, cell_id, min_ratio):
         by = s.groupby(s.index.month).mean()
         w = by.reindex([12, 1, 2]).mean()
         su = by.reindex([6, 7, 8]).mean()
-        return None if not su else float(w / su)
+        if w is None or pd.isna(w) or su is None or pd.isna(su) or su == 0:
+            return None
+        return float(w / su)
 
     gr = ratio(series)
     if gr is None:
         parts.append("ground: n/a")
     else:
+        evaluated = True
         parts.append(f"ground winter/summer = {gr:.2f}")
         if gr < min_ratio:
             findings_level = "FAIL"
@@ -85,9 +89,12 @@ def _seasonal_cycle(cid, name, series, grid, cell_id, min_ratio):
             s = pd.to_numeric(gs.set_index("date")["pm2_5"], errors="coerce").dropna()
             mr = ratio(s)
             if mr is not None:
+                evaluated = True
                 parts.append(f"grid winter/summer = {mr:.2f}")
                 if mr < min_ratio and findings_level != "FAIL":
                     findings_level = "WARN"
+    if not evaluated:
+        findings_level = "INFO"
     return Finding(cid, findings_level,
                    f"seasonal cycle ({name}); expect winter >= {min_ratio}x summer — " + "; ".join(parts))
 
