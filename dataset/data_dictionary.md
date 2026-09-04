@@ -26,9 +26,11 @@
 | n_hours_ozone | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_pm10 | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_pm2_5 | derived | count | hours present that day | <18 ⇒ day flagged |
+| n_hours_relative_humidity | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_relative_humidity_2m | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_sulphur_dioxide | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_surface_pressure | derived | count | hours present that day | <18 ⇒ day flagged |
+| n_hours_temperature | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_temperature_2m | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_wind_direction_10m | derived | count | hours present that day | <18 ⇒ day flagged |
 | n_hours_wind_speed_10m | derived | count | hours present that day | <18 ⇒ day flagged |

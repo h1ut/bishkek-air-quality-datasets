@@ -1,74 +1,265 @@
 {
-  "version": "v1",
-  "config": {
-    "visState": {
-      "filters": [
-        {
-          "dataId": [
-            "ca_air_quality_grid"
-          ],
-          "name": [
-            "date"
-          ],
-          "type": "timeRange",
-          "enlarged": true,
-          "plotType": "histogram",
-          "animationWindow": "free"
-        }
-      ],
-      "layers": [
-        {
-          "id": "grid_pts",
-          "type": "point",
-          "config": {
-            "dataId": "ca_air_quality_grid",
-            "label": "CAMS grid (all variables)",
-            "columns": {
-              "lat": "lat",
-              "lng": "lon",
-              "altitude": null
-            },
-            "isVisible": true,
-            "visConfig": {
-              "radius": 18,
-              "opacity": 0.75,
-              "colorRange": {
-                "name": "ColorBrewer YlOrRd-6",
-                "type": "sequential",
-                "category": "ColorBrewer",
-                "colors": [
-                  "#ffffb2",
-                  "#fed976",
-                  "#feb24c",
-                  "#fd8d3c",
-                  "#f03b20",
-                  "#bd0026"
-                ]
-              },
-              "radiusRange": [
-                5,
-                40
-              ]
-            },
-            "colorField": {
-              "name": "pm2_5",
-              "type": "real"
-            },
-            "colorScale": "quantile"
-          }
-        }
-      ],
-      "layerBlending": "normal"
+ "version": "v1",
+ "config": {
+  "visState": {
+   "filters": [
+    {
+     "dataId": [
+      "ca_air_quality_grid"
+     ],
+     "id": "tf_grid",
+     "name": [
+      "date"
+     ],
+     "type": "timeRange",
+     "enlarged": true,
+     "plotType": "histogram",
+     "animationWindow": "free"
     },
-    "mapState": {
-      "latitude": 43.0,
-      "longitude": 71.5,
-      "zoom": 4.4,
-      "bearing": 0,
-      "pitch": 0
-    },
-    "mapStyle": {
-      "styleType": "dark"
+    {
+     "dataId": [
+      "ca_air_quality_stations"
+     ],
+     "id": "tf_stn",
+     "name": [
+      "date"
+     ],
+     "type": "timeRange",
+     "enlarged": false,
+     "plotType": "histogram",
+     "animationWindow": "free"
     }
+   ],
+   "layers": [
+    {
+     "id": "grid",
+     "type": "point",
+     "config": {
+      "dataId": "ca_air_quality_grid",
+      "label": "CAMS grid \u2014 all variables",
+      "color": [
+       241,
+       92,
+       23
+      ],
+      "columns": {
+       "lat": "lat",
+       "lng": "lon",
+       "altitude": null
+      },
+      "isVisible": true,
+      "visConfig": {
+       "radius": 20,
+       "opacity": 0.75,
+       "radiusRange": [
+        5,
+        45
+       ],
+       "filled": true,
+       "colorRange": {
+        "name": "ColorBrewer YlOrRd-6",
+        "type": "sequential",
+        "category": "ColorBrewer",
+        "colors": [
+         "#ffffb2",
+         "#fed976",
+         "#feb24c",
+         "#fd8d3c",
+         "#f03b20",
+         "#bd0026"
+        ]
+       }
+      },
+      "colorField": {
+       "name": "pm2_5",
+       "type": "real"
+      },
+      "colorScale": "quantile"
+     },
+     "visualChannels": {
+      "colorField": {
+       "name": "pm2_5",
+       "type": "real"
+      },
+      "colorScale": "quantile",
+      "sizeField": null,
+      "sizeScale": "linear"
+     }
+    },
+    {
+     "id": "stn",
+     "type": "point",
+     "config": {
+      "dataId": "ca_air_quality_stations",
+      "label": "Ground stations (OpenAQ, 4 cities)",
+      "color": [
+       18,
+       147,
+       154
+      ],
+      "columns": {
+       "lat": "lat",
+       "lng": "lon",
+       "altitude": null
+      },
+      "isVisible": true,
+      "visConfig": {
+       "radius": 30,
+       "opacity": 0.9,
+       "radiusRange": [
+        10,
+        60
+       ],
+       "filled": true,
+       "outline": true,
+       "thickness": 2,
+       "colorRange": {
+        "name": "ColorBrewer YlOrRd-6",
+        "type": "sequential",
+        "category": "ColorBrewer",
+        "colors": [
+         "#ffffb2",
+         "#fed976",
+         "#feb24c",
+         "#fd8d3c",
+         "#f03b20",
+         "#bd0026"
+        ]
+       }
+      },
+      "colorField": {
+       "name": "pm2_5",
+       "type": "real"
+      },
+      "colorScale": "quantile"
+     },
+     "visualChannels": {
+      "colorField": {
+       "name": "pm2_5",
+       "type": "real"
+      },
+      "colorScale": "quantile",
+      "sizeField": null,
+      "sizeScale": "linear"
+     }
+    },
+    {
+     "id": "sen",
+     "type": "point",
+     "config": {
+      "dataId": "ca_air_quality_sensors",
+      "label": "All discovered sensors (~290)",
+      "color": [
+       255,
+       255,
+       255
+      ],
+      "columns": {
+       "lat": "lat",
+       "lng": "lon",
+       "altitude": null
+      },
+      "isVisible": false,
+      "visConfig": {
+       "radius": 8,
+       "opacity": 0.7,
+       "filled": true,
+       "colorRange": {
+        "name": "Uber Viz Qualitative 4",
+        "type": "qualitative",
+        "category": "Uber",
+        "colors": [
+         "#12939A",
+         "#DDB27C",
+         "#88572C",
+         "#FF991F",
+         "#F15C17"
+        ]
+       }
+      },
+      "colorField": {
+       "name": "network",
+       "type": "string"
+      },
+      "colorScale": "ordinal"
+     },
+     "visualChannels": {
+      "colorField": {
+       "name": "network",
+       "type": "string"
+      },
+      "colorScale": "ordinal",
+      "sizeField": null,
+      "sizeScale": "linear"
+     }
+    }
+   ],
+   "layerBlending": "normal",
+   "interactionConfig": {
+    "tooltip": {
+     "enabled": true,
+     "fieldsToShow": {
+      "ca_air_quality_grid": [
+       {
+        "name": "cell_id"
+       },
+       {
+        "name": "pm2_5"
+       },
+       {
+        "name": "pm10"
+       },
+       {
+        "name": "dust"
+       },
+       {
+        "name": "temperature_2m"
+       },
+       {
+        "name": "boundary_layer_height"
+       }
+      ],
+      "ca_air_quality_stations": [
+       {
+        "name": "station_key"
+       },
+       {
+        "name": "pm2_5"
+       },
+       {
+        "name": "pm10"
+       },
+       {
+        "name": "ozone"
+       }
+      ],
+      "ca_air_quality_sensors": [
+       {
+        "name": "sensor_name"
+       },
+       {
+        "name": "network"
+       },
+       {
+        "name": "pollutants"
+       },
+       {
+        "name": "period_start"
+       }
+      ]
+     }
+    }
+   }
+  },
+  "mapState": {
+   "latitude": 43.5,
+   "longitude": 72.0,
+   "zoom": 4.3,
+   "bearing": 0,
+   "pitch": 0
+  },
+  "mapStyle": {
+   "styleType": "dark"
   }
+ }
 }
