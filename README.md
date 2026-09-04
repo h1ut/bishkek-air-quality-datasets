@@ -310,6 +310,24 @@ Read this section before using the data for anything.
 
 ---
 
+## Real-run coverage (2026-09-04)
+
+What the shipped `dataset/` actually contains after the latest real pipeline run:
+
+- **Grid** — `grid_daily.parquet`, 2021-01-01 → 2025-12-31 on the 2° / 56-cell
+  grid. CAMS pollutants populate only from **2022-08-04** (archive start); ERA5
+  meteorology is complete. **12 of the 56 cells (latitudes 49° and 51°, the
+  northern edge ~700 km from Bishkek) were never fetched** — the Open-Meteo
+  free-tier daily quota truncated the sweep, so they carry no CAMS pollutant
+  data at all. The `plausibility.cell_coverage` QA check surfaces this; the
+  1.0° re-run must refetch those cells.
+- **Stations** — `stations_daily.csv`, OpenAQ Bishkek ≈ 1237 days but with a
+  **2021–2023 hole**, so the annual-mean series jumps from 2020 straight to
+  2024. Model-vs-ground PM2.5 overlap for the Bishkek cell is only **~400 days**.
+- **Reference agreement** — ground exceedance-day counts for the full heating
+  seasons (2019 / 2024 / 2025 = **92 / 79 / 74** days > 35 µg/m³) sit inside
+  Isaev et al. (2022) Table 4's published **52–93** range.
+
 ## 6. Map & kepler
 
 ### Folium map — [`map/bishkek_air_quality_map.html`](map/bishkek_air_quality_map.html)

@@ -13,6 +13,7 @@ seasonality:
   min_winter_summer_ratio: 2.0
 plausibility:
   fail_fraction: 0.001
+# surface_pressure/pm10/dust widened 2026-09-04 for high-altitude Tian Shan/Pamir cells (~534 hPa) and Aral/Karakum dust storms (pm10/dust > 2000) — see qa/QA_REPORT.md Adjudications. Single global bounds; a corrupt lowland reading within range is not caught.
 ranges:
   pm2_5: [0, 1000]
   pm10: [0, 5000]

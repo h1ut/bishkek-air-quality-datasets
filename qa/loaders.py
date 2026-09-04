@@ -54,6 +54,15 @@ def _yaml(path):
 
 def load_context(dataset_dir="dataset", proc_dir="data/processed",
                  qa_dir="qa", kepler_dir="kepler") -> QAContext:
+    """Assemble a QAContext from whatever inputs are on disk.
+
+    Tolerant of missing OPTIONAL inputs: the dataset / processed / kepler files
+    and the two YAML config files all fall back to an empty frame or ``{}`` when
+    absent, so QA can run on a partial checkout. The one hard dependency is
+    ``catalog/standards.csv`` — ``load_standards()`` raises ``FileNotFoundError``
+    if it is missing, because the checks cannot resolve their thresholds without
+    it (it is a committed file, so this should not happen in a normal checkout).
+    """
     stations = _csv(f"{dataset_dir}/stations_daily.csv")
     grid = _parquet(f"{dataset_dir}/grid_daily.parquet")
     for df in (stations, grid):

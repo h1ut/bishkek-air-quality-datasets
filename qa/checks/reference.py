@@ -10,12 +10,27 @@ def heating_season(ts) -> int:
     return ts.year if ts.month >= 7 else ts.year - 1
 
 
+MIN_GROUND_DAYS = 180
+
+
 def best_ground_series(ctx):
+    """Pick the Bishkek ground PM2.5 series for the reference checks.
+
+    Walk the preference order (airnow, openaq, zenodo) but skip any candidate
+    with fewer than ``MIN_GROUND_DAYS`` non-null days, so a short gap-fill run
+    cannot silently displace a long series. If none clears the floor, fall back
+    to the single longest series available (any length). Return ``(None, None)``
+    only when there is no Bishkek series at all.
+    """
     s = bishkek_series(ctx)
+    if not s:
+        return None, None
     for k in ("airnow", "openaq", "zenodo"):
-        if k in s and len(s[k]):
-            return k, s[k]
-    return None, None
+        ser = s.get(k)
+        if ser is not None and int(ser.notna().sum()) >= MIN_GROUND_DAYS:
+            return k, ser
+    k = max(s, key=lambda kk: int(s[kk].notna().sum()))
+    return k, s[k]
 
 
 def _annual_mean(cid, name, series, ref):
@@ -31,8 +46,8 @@ def _annual_mean(cid, name, series, ref):
         if outb:
             level = "WARN"
     table = f"| year | mean pm2_5 | days | vs [{lo},{hi}] |\n|---|---|---|---|\n" + "\n".join(rows)
-    return Finding(cid, level, f"annual mean pm2_5 ({name}) vs published band [{lo},{hi}] "
-                               f"({band.get('cite','')})", table)
+    return Finding(cid, level, f"annual mean pm2_5 ({name}, n={len(series)}) vs published band "
+                               f"[{lo},{hi}] ({band.get('cite','')})", table)
 
 
 def _exceedance_days(cid, name, series, std, ref):
@@ -56,8 +71,8 @@ def _exceedance_days(cid, name, series, std, ref):
         rows.append(f"| {s} | {int(g['pm2_5'].count())} | {d55} | {d35} | {note} |")
     table = (f"| heating season | days w/ data | days >{danger} | days >{kg} | vs Isaev T4 |\n"
              "|---|---|---|---|---|\n" + "\n".join(rows))
-    return Finding(cid, level, f"exceedance days per heating season ({name}); Isaev Table 4 "
-                               f">{kg}: {lo}-{hi}/season ({band.get('cite','')})", table)
+    return Finding(cid, level, f"exceedance days per heating season ({name}, n={len(series)}); "
+                               f"Isaev Table 4 >{kg}: {lo}-{hi}/season ({band.get('cite','')})", table)
 
 
 def _seasonal_cycle(cid, name, series, grid, cell_id, min_ratio):
@@ -95,8 +110,10 @@ def _seasonal_cycle(cid, name, series, grid, cell_id, min_ratio):
                     findings_level = "WARN"
     if not evaluated:
         findings_level = "INFO"
+    n = 0 if series is None else len(series)
     return Finding(cid, findings_level,
-                   f"seasonal cycle ({name}); expect winter >= {min_ratio}x summer — " + "; ".join(parts))
+                   f"seasonal cycle ({name}, n={n}); expect winter >= {min_ratio}x summer — "
+                   + "; ".join(parts))
 
 
 def _gap(cid, name, series, grid, cell_id, std):
@@ -104,6 +121,8 @@ def _gap(cid, name, series, grid, cell_id, std):
         return Finding(cid, "INFO", "need both a ground series and the grid Bishkek cell")
     kg = std["kg_mpc_daily_pm25"]
     gs = grid[grid["cell_id"] == cell_id]
+    if "pm2_5" not in gs:
+        return Finding(cid, "INFO", "grid Bishkek cell has no pm2_5 column")
     s_grid = pd.to_numeric(gs.set_index("date")["pm2_5"], errors="coerce").dropna()
     gdf = pd.DataFrame({"pm2_5": s_grid})
     gdf["season"] = [heating_season(t) for t in gdf.index]

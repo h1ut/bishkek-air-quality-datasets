@@ -43,6 +43,34 @@ def test_completeness_reports_low_season_as_warn():
     assert out["plausibility.completeness"].table is not None
 
 
+def test_cell_coverage_warns_when_a_cell_has_no_pm25():
+    days = pd.date_range("2022-08-04", "2022-08-10", freq="D")
+    frames = []
+    for cid, pm in (("a", 10.0), ("b", 12.0), ("c", float("nan"))):
+        frames.append(pd.DataFrame({
+            "cell_id": [cid] * len(days), "lat": [43.0] * len(days),
+            "lon": [75.0] * len(days), "date": days,
+            "pm2_5": pd.Series([pm] * len(days), dtype="float64")}))
+    grid = pd.concat(frames, ignore_index=True)
+    out = {f.check_id: f for f in plausibility.run(_ctx(grid=grid))}
+    f = out["plausibility.cell_coverage"]
+    assert f.level == "WARN"                       # 2/3 cells = 66.7% < 80%
+    assert "c" in f.table
+
+
+def test_cell_coverage_passes_when_every_cell_has_data():
+    days = pd.date_range("2022-08-04", "2022-08-10", freq="D")
+    frames = []
+    for cid in ("a", "b", "c"):
+        frames.append(pd.DataFrame({
+            "cell_id": [cid] * len(days), "lat": [43.0] * len(days),
+            "lon": [75.0] * len(days), "date": days,
+            "pm2_5": [10.0] * len(days)}))
+    grid = pd.concat(frames, ignore_index=True)
+    out = {f.check_id: f for f in plausibility.run(_ctx(grid=grid))}
+    assert out["plausibility.cell_coverage"].level == "PASS"
+
+
 def test_duplicate_keys_stations_flags_dupe_pair():
     stations = pd.DataFrame({
         "station_key": ["s1", "s1", "s2"],

@@ -41,11 +41,11 @@ def _completeness(cid, df, key_col, warn_pct, fail_pct):
     d["year"] = d["date"].dt.year
     vars_present = [v for v in AQ_VARS + WX_VARS + ["pm2_5"] if v in d.columns]
     vars_present = list(dict.fromkeys(vars_present))
-    per_key = d[key_col].nunique() if key_col in d.columns else 1
     rows = []
     worst = 100.0
     for (yr,), g in d.groupby(["year"]):
         span = (g["date"].max() - g["date"].min()).days + 1
+        per_key = g[key_col].nunique() if key_col in g.columns else 1
         expected = max(span, 1) * per_key
         for v in vars_present:
             got = int(pd.to_numeric(g[v], errors="coerce").notna().sum())
@@ -60,6 +60,40 @@ def _completeness(cid, df, key_col, warn_pct, fail_pct):
     if worst < warn_pct:
         return Finding(cid, "WARN", f"lowest year/var coverage {worst:.0f}% (< {warn_pct}%)", table)
     return Finding(cid, "PASS", f"all year/var coverage >= {warn_pct}%", table)
+
+
+def _cell_coverage(cid, grid, warn_pct):
+    """% of grid cells with >=1 non-null value for each AQ var.
+
+    Catches the case where a slice of cells shipped with zero pollutant data
+    (e.g. an Open-Meteo grid fetch truncated by the daily quota) — a defect the
+    year x variable completeness table blends into an average that reads as a
+    purely temporal gap.
+    """
+    if grid is None or grid.empty or "cell_id" not in grid.columns:
+        return Finding(cid, "INFO", "grid empty / no cell_id column")
+    aq_present = [v for v in AQ_VARS if v in grid.columns]
+    if not aq_present:
+        return Finding(cid, "INFO", "no AQ variables present in grid")
+    all_cells = set(grid["cell_id"].dropna().unique())
+    total = len(all_cells)
+    rows, worst, incomplete = [], 100.0, 0
+    for v in aq_present:
+        covered = set(grid.loc[pd.to_numeric(grid[v], errors="coerce").notna(), "cell_id"])
+        pct = 100.0 * len(covered) / total if total else 0.0
+        worst = min(worst, pct)
+        zeros = sorted(all_cells - covered)
+        if zeros:
+            incomplete += 1
+        rows.append(f"| {v} | {len(covered)}/{total} | {', '.join(zeros)} |")
+    table = ("| AQ var | covered cells / total | zero-coverage cell_ids |\n"
+             "|---|---|---|\n" + "\n".join(rows))
+    if worst < warn_pct:
+        return Finding(cid, "WARN",
+                       f"{incomplete}/{len(aq_present)} AQ var(s) below full cell coverage; "
+                       f"lowest {worst:.0f}% of {total} cells (< {warn_pct}% warn floor) — "
+                       "see zero-coverage cell_ids in table", table)
+    return Finding(cid, "PASS", f"every AQ var has >=1 non-null value in all {total} cells", table)
 
 
 def _dupes(cid, df, keys):
@@ -90,8 +124,8 @@ def _gaps(cid, df, key_col, warn_days):
 
 
 def _cams_boundary(cid, grid, cell_id, boundary):
-    if grid is None or grid.empty or cell_id is None:
-        return Finding(cid, "INFO", "no grid / no Bishkek cell")
+    if grid is None or grid.empty or cell_id is None or "cell_id" not in grid.columns:
+        return Finding(cid, "INFO", "no grid / no Bishkek cell / no cell_id column")
     b = pd.Timestamp(boundary)
     sub = grid[grid["cell_id"] == cell_id]
     if sub.empty:
@@ -123,6 +157,7 @@ def run(ctx) -> list[Finding]:
         _ranges("plausibility.ranges_stations", ctx.stations, ranges, ff),
         _completeness("plausibility.completeness", ctx.grid, "cell_id",
                       comp.get("warn_pct", 80), comp.get("fail_pct", 50)),
+        _cell_coverage("plausibility.cell_coverage", ctx.grid, comp.get("warn_pct", 80)),
         _dupes("plausibility.duplicate_keys", ctx.grid, ["cell_id", "date"]),
         _dupes("plausibility.duplicate_keys_stations", ctx.stations, ["station_key", "date"]),
         _gaps("plausibility.date_gaps", ctx.grid, "cell_id",

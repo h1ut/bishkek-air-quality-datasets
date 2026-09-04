@@ -93,3 +93,9 @@ Embassy archive series is therefore unavailable this run.
    ranges — high-altitude Tian Shan / Pamir cells (~534 hPa) and Aral/Karakum
    dust storms (pm10 > 2000, dust > 3000 µg/m³) are physically real for this
    grid and would otherwise trip range FAILs.
+6. 12 of the 56 grid cells (latitudes 49° and 51°, the northern edge ~700 km
+   from Bishkek) carry **no CAMS pollutant data at all** — the Open-Meteo grid
+   fetch was truncated by the free-tier daily quota. ERA5 meteorology is present
+   for those cells. The `plausibility.cell_coverage` QA check now surfaces this
+   explicitly (44/56 = 79 % AQ-var cell coverage → WARN). It does not affect the
+   Bishkek-centred analysis but the 1.0° re-run must refetch those cells.

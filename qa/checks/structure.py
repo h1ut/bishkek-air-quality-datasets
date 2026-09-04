@@ -94,8 +94,8 @@ def _dict_coverage(cid, df, dd_text):
 
 
 def _grid_bbox(cid, df):
-    if df is None or df.empty or "lat" not in df.columns:
-        return Finding(cid, "INFO", "no grid")
+    if df is None or df.empty or "lat" not in df.columns or "lon" not in df.columns:
+        return Finding(cid, "INFO", "no grid / lat or lon column absent")
     bad = int(((df["lat"] < 39) | (df["lat"] > 52) |
                (df["lon"] < 66) | (df["lon"] > 80)).sum())
     if bad:
@@ -106,6 +106,9 @@ def _grid_bbox(cid, df):
 def _kepler_long(cid, long_df):
     if long_df is None or long_df.empty:
         return Finding(cid, "INFO", "grid_daily_long absent")
+    need = [c for c in ("cell_id", "date", "variable", "value") if c not in long_df.columns]
+    if need:
+        return Finding(cid, "INFO", f"grid_daily_long missing columns: {need}")
     ok_vars = set(AQ_VARS + WX_VARS)
     bad_vars = sorted(set(long_df["variable"]) - ok_vars)
     nulls = int(long_df["value"].isna().sum())
@@ -126,6 +129,7 @@ def run(ctx) -> list[Finding]:
         _flag_consistency("structure.flag_consistency", ctx.grid, danger, kg),
         _n_hours("structure.n_hours_bounds", ctx.grid),
         _dict_coverage("structure.dict_coverage", ctx.grid, ctx.data_dictionary),
+        _dict_coverage("structure.dict_coverage_stations", ctx.stations, ctx.data_dictionary),
         _grid_bbox("structure.grid_bbox", ctx.grid),
         _kepler_long("structure.kepler_long", ctx.grid_long),
     ]

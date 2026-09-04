@@ -36,7 +36,7 @@
      "type": "point",
      "config": {
       "dataId": "ca_air_quality_grid",
-      "label": "CAMS grid \u2014 all variables",
+      "label": "CAMS grid — all variables",
       "color": [
        241,
        92,
@@ -50,11 +50,7 @@
       "isVisible": true,
       "visConfig": {
        "radius": 20,
-       "opacity": 0.75,
-       "radiusRange": [
-        5,
-        45
-       ],
+       "opacity": 0.8,
        "filled": true,
        "colorRange": {
         "name": "ColorBrewer YlOrRd-6",
@@ -91,7 +87,7 @@
      "type": "point",
      "config": {
       "dataId": "ca_air_quality_stations",
-      "label": "Ground stations (OpenAQ, 4 cities)",
+      "label": "Ground stations (OpenAQ/AirNow)",
       "color": [
        18,
        147,
@@ -105,14 +101,8 @@
       "isVisible": true,
       "visConfig": {
        "radius": 30,
-       "opacity": 0.9,
-       "radiusRange": [
-        10,
-        60
-       ],
+       "opacity": 0.8,
        "filled": true,
-       "outline": true,
-       "thickness": 2,
        "colorRange": {
         "name": "ColorBrewer YlOrRd-6",
         "type": "sequential",
@@ -148,7 +138,7 @@
      "type": "point",
      "config": {
       "dataId": "ca_air_quality_sensors",
-      "label": "All discovered sensors (~290)",
+      "label": "All discovered sensors",
       "color": [
        255,
        255,

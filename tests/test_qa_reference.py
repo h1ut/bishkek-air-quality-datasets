@@ -52,6 +52,17 @@ def test_exceedance_days_in_range_is_info():
     assert out["reference.exceedance_days"].level == "INFO"
 
 
+def test_best_ground_series_skips_short_airnow_for_long_openaq():
+    ai_idx = pd.date_range("2024-01-01", periods=20)
+    an = pd.DataFrame({"date": ai_idx, "pm2_5": [30.0] * 20})
+    oa_idx = pd.date_range("2022-01-01", periods=400)
+    oa = pd.DataFrame({"date": oa_idx, "pm2_5": [25.0] * 400})
+    name, series = reference.best_ground_series(
+        _ctx(airnow=an, openaq={"openaq_bishkek": oa}))
+    assert name == "openaq"
+    assert int(series.notna().sum()) == 400
+
+
 def test_seasonal_cycle_no_series_no_grid_is_info():
     out = {f.check_id: f for f in reference.run(_ctx())}  # no airnow, empty grid
     assert out["reference.seasonal_cycle"].level == "INFO"

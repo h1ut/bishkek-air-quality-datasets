@@ -5,8 +5,6 @@ from pathlib import Path
 import folium
 import pandas as pd
 
-from qa.geo import nearest_cell_id, BISHKEK_LAT, BISHKEK_LON  # noqa: F401
-
 GRADE_COLOR = {"A": "green", "B": "orange", "C": "red"}
 COMPARISON = {"Almaty", "Tashkent", "Astana"}
 
