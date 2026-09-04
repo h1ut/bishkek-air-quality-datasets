@@ -9,3 +9,6 @@ dataset/grid_daily.parquet
 dataset/grid_daily_long.parquet
 kepler/grid_daily_long.parquet
 .venv/
+kepler/ca_air_quality_map.json
+kepler/ca_air_quality_grid.csv
+kepler/ca_air_quality_stations.csv
