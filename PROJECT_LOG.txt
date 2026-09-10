@@ -1,0 +1,237 @@
+CENTRAL ASIA AIR QUALITY DATASET COLLECTION - PROJECT LOG
+========================================================
+Last updated: 2026-09-10
+Repo: https://github.com/h1ut/bishkek-air-quality-datasets  (branch: main)
+
+This is a plain-text handoff note. Fuller detail is in:
+  - README.md                      (dataset reference, source grading, licences)
+  - docs/PROJECT_DOCUMENTATION.md   (full narrative + engineering log)
+  - qa/QA_REPORT.md                 (data quality results + adjudications)
+
+
+1. WHAT THIS PROJECT IS
+-----------------------
+It is the DATA-COLLECTION part of a research project on predicting next-day
+daily-average PM2.5 in Bishkek during the heating season (Nov-Mar).
+
+This repo does NOT contain the machine-learning model. It only:
+  - finds and catalogs open-source air-quality + weather data for Bishkek and
+    Central Asia, 2021-2025;
+  - fetches it with runnable scripts;
+  - merges it into two clean datasets;
+  - quality-checks it;
+  - packages it for interactive maps (Folium + kepler.gl).
+
+The ML study it feeds asks:
+  RQ1 - Can air quality be predicted accurately in a data-scarce region
+        like Bishkek?
+  RQ2 - Do extra pollutants (SO2, CO, NO2, PM10) improve next-day PM2.5
+        forecasts, or do they mainly add noise and missing values?
+  RQ3 - How does performance change with the algorithm used?
+RQ3 is a modelling question and is out of scope here. This repo gives RQ1 an
+honest picture of how scarce the data really is, and gives RQ2 every candidate
+predictor with its missing-data profile so the ablation can be done properly.
+
+
+2. THRESHOLDS (agreed, fixed)
+-----------------------------
+Only two standards are used to label a day:
+  - "dangerous day" (primary)  = daily-mean PM2.5 > 55.4 ug/m3
+        US EPA Air Quality Index "Unhealthy" lower breakpoint.
+  - "national limit" (secondary) = daily-mean PM2.5 > 35 ug/m3
+        Kyrgyz PDK srednesutochnaya, decree PP KR No 201 of 11.04.2016, item 613.
+WHO and EU limits were considered and deliberately NOT used.
+All values + citations: catalog/standards.csv (13 rows, each cited to a primary
+source; the Kyrgyz numbers were read straight from the official decree PDF).
+
+
+3. DATA SOURCES - WHAT, WHERE FROM, WHY
+--------------------------------------
+Grades: A = reference-grade measurement; B = usable measurement or model, needs
+care; C = weak / manual / uncalibrated. A model or satellite source can never
+be graded A by our own rule.
+
+GROUND MEASUREMENT
+  AirNow - US Embassy Bishkek                                     grade A
+    From: US EPA AirNow API (https://docs.airnowapi.org), free key.
+    Why:  the only reference-grade (EPA FEM) PM2.5 monitor in Bishkek. This is
+          the ground-truth target and the yardstick for checking the model grid.
+    Limits: one instrument, one location; occasional gaps. Our direct 2025
+          gap-fill call returned AQI only, no ug/m3 - not usable; the Bishkek
+          reference is covered instead by OpenAQ's own AirNow-provider station.
+
+  OpenAQ v3                                                       grade B
+    From: OpenAQ REST API v3 (https://explore.openaq.org), free key.
+    Why:  main programmatic source of multi-pollutant + lagged-PM2.5 data for
+          Bishkek, Almaty, Tashkent, Astana. Feeds RQ2 directly.
+    Limits: mixes reference and low-cost instruments; per-station provenance
+          must be checked. For Bishkek the aggregate has a 2021-2023 hole
+          (jumps from 2020 to 2024).
+
+  Zenodo record 12720883 (Guttikunda 2024)                       grade B
+    From: https://doi.org/10.5281/zenodo.12720883 , CC BY 4.0 file download.
+    Why:  offline fallback for the Bishkek ground record (US Embassy 2019-2024
+          + a Clarity low-cost network 2021) and a static 2018 emissions grid
+          usable as a spatial predictor.
+    Limits: the archive holds a .rar file and this machine has no rar
+          extractor (7z / unrar / bsdtar), so those series are NOT yet
+          extracted. Install an extractor, then run fetch/parse_zenodo_bishkek.py.
+
+  Kyrgyzhydromet / MoveGreen AQ.kg / AirKaz                      grade C
+    From: agency PDF bulletins / NGO app / AirKaz.org.
+    Why:  extra spatial density and pollutant coverage (SO2, NO2, NH3, HCHO).
+    Limits: history is PDF-only or the sensors are uncalibrated low-cost units.
+          Documented in the catalog, NOT automated.
+
+MODEL / REANALYSIS / SATELLITE  (estimates, not measurements)
+  Open-Meteo Air Quality API (Copernicus CAMS)                   grade B
+    From: https://open-meteo.com air-quality endpoint, no key.
+    Why:  region-wide gridded pollutants (pm2_5, pm10, CO, NO2, SO2, O3,
+          aerosol optical depth, dust) for spatial/temporal context - dust
+          intrusions, cross-border smoke, synoptic setup.
+    Limits: coarse model surface (~0.4 deg native). IMPORTANT: the CAMS
+          archive STARTS 2022-08-04 - every gas/aerosol column is empty before
+          that date.
+
+  Open-Meteo Historical Weather API (ECMWF ERA5)                 grade B
+    From: https://open-meteo.com historical-weather endpoint, no key.
+    Why:  the meteorology block - temperature_2m, relative_humidity_2m,
+          wind_speed_10m, wind_direction_10m, surface_pressure, and
+          boundary_layer_height (the key driver of Bishkek winter inversions).
+    Limits: reanalysis - reliable for synoptic conditions, not local extremes.
+          ERA5 DOES cover the full 2021-2025 span.
+
+  Sentinel-5P TROPOMI ; CAMS Global Reanalysis EAC4             grade B
+    Why:  independent trace-gas signal / alternative gridded backbone.
+    Status: documented with ready-to-run code snippets only, NOT automated
+          this iteration.
+
+STUDY TABLES (annual aggregates, for sanity checks only)
+  WHO Ambient Air Quality Database ; World Bank Bishkek 2023      grade C
+    Used only to check that our annual PM2.5 levels are in a sane range.
+
+Full machine-readable list: catalog/sources.csv (12 sources) and
+catalog/studies.csv (8 case-study papers, incl. Isaev et al. 2022).
+
+
+4. WHAT WAS BUILT  (all committed)
+---------------------------------
+  catalog/     - sources.csv, studies.csv, stations.geojson, standards.csv,
+                 plus validators.
+  fetch/       - runnable API clients: fetch_openaq, fetch_airnow,
+                 fetch_zenodo_bishkek (+ parse_zenodo_bishkek), fetch_open_meteo,
+                 and build_dataset.py which merges everything.
+                 Responses are cached 30 days; each writes a *_quality_report.md.
+  dataset/     - data_dictionary.md (every column explained) + a 63-row grid
+                 sample. The big files are generated, not committed.
+  qa/          - 4-axis quality layer (structure / plausibility / agreement /
+                 reference) -> qa/QA_REPORT.md. Read-only, never edits data.
+  map/         - build_map.py -> bishkek_air_quality_map.html (layered Folium
+                 map: monitors by grade, comparison cities, study sites,
+                 airshed box, one-day CAMS PM2.5 snapshot).
+  kepler/      - build_kepler_map.py -> CSVs + config for kepler.gl/demo, with
+                 a 2021-2025 time slider. HOW_TO_LOAD.md has the steps.
+  docs/        - the two design specs + implementation plans the work followed.
+  tests/       - 72 passing (.venv/Scripts/python -m pytest -q).
+
+
+5. THE TWO DATASETS (from the real pipeline run, 2026-09-04)
+-----------------------------------------------------------
+  dataset/stations_daily.csv   - ground truth, one row per station per day.
+        3417 rows: Bishkek, Almaty, Tashkent, Astana + the US Embassy key.
+        Columns: pm2_5, pm10, CO, NO2, SO2, O3 (+ daily max), hour-count per
+        variable, sparse flag, and a *_source column saying which feed supplied
+        each value.
+
+  dataset/grid_daily.parquet   - regional model grid, one row per cell per day.
+        102256 rows = 56 cells x 1826 days, 2021-01-01 to 2025-12-31.
+        8 CAMS pollutants + 6 ERA5 weather variables (+ daily max), plus the
+        dangerous_day and exceeds_kg_limit flags.
+        Built at 2 degree spacing (see limitation 2 below).
+
+
+6. WHAT IS DONE
+---------------
+  [x] Source catalog with A/B/C grades + licences
+  [x] Standards / thresholds fixed and cited (catalog/standards.csv)
+  [x] Fetch scripts for OpenAQ, AirNow, Zenodo, Open-Meteo (CAMS + ERA5)
+  [x] Dataset builder + auto data dictionary
+  [x] One real end-to-end pipeline run on live data
+  [x] 4-axis QA layer + committed report: 15 PASS / 4 INFO / 5 WARN / 0 FAIL
+  [x] Folium map
+  [x] kepler.gl export + load guide
+  [x] 72 passing tests
+  [x] Pushed to GitHub, documentation written
+
+
+7. WHAT IS NOT DONE  (deferred, with reason)
+-------------------------------------------
+  1. CAMS pollutants do not reach 2021. The Open-Meteo CAMS archive begins
+     2022-08-04. Only ERA5 weather covers the full 2021-2025. Any model using
+     the gridded pollutants must limit its training window.
+
+  2. The grid is 2 degrees / 56 cells, not the planned 1.0 deg / ~210 cells.
+     The finer fetch was blocked by the Open-Meteo free-tier daily request
+     limit (hit twice). Fix: re-run
+       fetch.fetch_open_meteo --mode grid --grid-spacing 1.0
+     on a day with fresh quota.
+
+  3. 12 of the 56 grid cells (the northern edge, ~700 km from Bishkek) have NO
+     CAMS pollutant data at all - the sweep was cut off mid-run by the same
+     quota. They still have ERA5 weather. The QA check plausibility.cell_coverage
+     flags this. Does not affect the Bishkek analysis; the 1.0 deg re-run fixes it.
+
+  4. OpenAQ Bishkek has a 2021-2023 data hole. Model-vs-ground overlap for the
+     Bishkek cell is only ~400 days. For a model covering 2021-2023 the ground
+     target needs the Zenodo US Embassy archive.
+
+  5. The Zenodo .rar is not extracted (no rar tool on this machine).
+
+  6. Sentinel-5P and CAMS-EAC4 are documented but not automated - by design.
+
+  7. Optional: render the kepler grid as filled polygon blocks (choropleth)
+     instead of point circles. Not started. Colour-by-administrative-district
+     is not possible: the 2 deg cell (~200 km) is far larger than any district.
+
+
+8. KEY QA RESULT A MENTOR SHOULD KNOW
+------------------------------------
+The OpenAQ Bishkek ground series REPRODUCES published numbers: for the full
+heating seasons 2019 / 2024 / 2025 it shows 92 / 79 / 74 days above the
+35 ug/m3 Kyrgyz limit, all inside the 52-93 range reported by
+Isaev et al. (2022), Aerosol Air Qual. Res., doi:10.4209/aaqr.210336, Table 4.
+
+The CAMS model grid, by contrast, under-reads Bishkek (r ~ 0.39, bias
+~ -12 ug/m3) because a 2 deg cell averages the city with cold clean mountains.
+So: use the GROUND station for the PM2.5 target and any exceedance-day
+analysis; use the GRID only for regional/temporal context.
+
+Every WARN in qa/QA_REPORT.md is an expected model/data characteristic, not a
+pipeline bug - each one is adjudicated at the bottom of that file. Zero FAILs.
+
+
+9. HOW TO RE-RUN
+----------------
+  python -m venv .venv
+  .venv/Scripts/python -m pip install -r requirements.txt
+  copy fetch/config.example.yaml to fetch/config.yaml  and add the 2 free keys
+    (OpenAQ: https://explore.openaq.org/register ,
+     AirNow: https://docs.airnowapi.org/account/request/)
+  then, from the repo root:
+  .venv/Scripts/python -m fetch.fetch_openaq
+  .venv/Scripts/python -m fetch.fetch_airnow
+  .venv/Scripts/python -m fetch.fetch_zenodo_bishkek
+  .venv/Scripts/python -m fetch.fetch_open_meteo --mode points
+  .venv/Scripts/python -m fetch.fetch_open_meteo --mode grid --grid-spacing 2.0
+  .venv/Scripts/python -m fetch.build_dataset
+  .venv/Scripts/python -m map.build_map
+  .venv/Scripts/python -m kepler.build_kepler_map
+  .venv/Scripts/python -m qa.report        (writes qa/QA_REPORT.md; exit 1 on FAIL)
+  .venv/Scripts/python -m pytest -q        (72 passing)
+
+Watch the Open-Meteo quota: --mode grid makes 2 calls per cell over the whole
+date range; the free tier caps around 10000 calls/day. 2 deg / 56 cells is the
+safe fallback.
+
+fetch/config.yaml and everything under data/ are gitignored. No API key is in
+the repo or its git history (checked before the push).
