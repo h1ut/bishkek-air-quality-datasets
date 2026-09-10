@@ -12,6 +12,10 @@ kepler.gl exports, and a per-source quality report for every fetch script. It
 deliberately does **not** build the ML pipeline itself, and it documents rather
 than automates the heavy satellite stacks (Sentinel-5P, CAMS-EAC4).
 
+> **Full project documentation** — what was built, how it maps to the research
+> questions (RQ1–RQ3), the QA results and the engineering log:
+> [`docs/PROJECT_DOCUMENTATION.md`](docs/PROJECT_DOCUMENTATION.md).
+
 ---
 
 ## 1. What this is
