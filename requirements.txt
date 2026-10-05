@@ -4,3 +4,6 @@ pyarrow>=17
 folium>=0.17
 PyYAML>=6.0
 pytest>=8.0
+scikit-learn>=1.3        # prep/baseline.py
+omfiles>=1.0             # prep/sources/openmeteo_s3.py (Open-Meteo .om reader)
+s3fs>=2024.1             # anonymous S3 range reads for .om files

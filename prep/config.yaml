@@ -7,7 +7,7 @@ study:
   timezone: "Asia/Bishkek"          # UTC+6 all year (no DST since 2005)
   target: "pm2_5_local_day_mean"    # 24-h mean over the LOCAL calendar day, µg/m³, US Embassy BAM
   horizon_days: 1                   # predict day D+1 ...
-  issue_time: "23:59 local on day D" # ... using only observations time-stamped <= end of day D
+  issue_time: "24:00 local, end of day D"  # ... using only observations of hours that start <= 23:00 of day D
   period_start: "2019-09-01"        # first full month of the US Embassy monitor in the OpenAQ archive
   period_end: "2025-12-31"          # study window end (README: 2021-2025 core, monitor history used for training)
 

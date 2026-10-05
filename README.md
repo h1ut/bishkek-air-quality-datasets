@@ -16,6 +16,17 @@ than automates the heavy satellite stacks (Sentinel-5P, CAMS-EAC4).
 > questions (RQ1–RQ3), the QA results and the engineering log:
 > [`docs/PROJECT_DOCUMENTATION.md`](docs/PROJECT_DOCUMENTATION.md).
 
+> **ML-ready dataset & data audit (2026-10).** A full audit of the ground-truth series found
+> critical problems in the data this collection originally produced (a foreign stream interleaved in
+> the US Embassy feed 2023-03-16 → 2025-01-16, `-999` sentinels averaged into daily means, UTC
+> instead of local days, a duplicated feed with a shifting clock offset, and an OpenAQ fetcher that
+> silently returned only the first 366 days per sensor). Read
+> [`DATA_AUDIT_REPORT.md`](DATA_AUDIT_REPORT.md) before using anything below. The corrected,
+> leakage-tested dataset with chronological train/validation/test splits is built by the `prep/`
+> pipeline into [`data/prepared/`](data/prepared/) (`python -m prep.run_all [--fetch]`); every
+> column is documented in [`data/prepared/FEATURE_DICTIONARY.md`](data/prepared/FEATURE_DICTIONARY.md).
+> Sections 4–5 below describe the original collection and are kept for history.
+
 ---
 
 ## 1. What this is

@@ -1,0 +1,78 @@
+{
+ "qc_8225": {
+  "raw_rows": 37691,
+  "units": [
+   "\u00b5g/m\u00b3"
+  ],
+  "sensors": [
+   23972
+  ],
+  "exact_duplicate_rows": 0,
+  "conflicting_duplicate_hours": 0,
+  "rows_outside_window": 0,
+  "off_grid_timestamps": 0,
+  "flag_counts": {
+   "ok": 34100,
+   "missing": 17845,
+   "missing_sentinel": 2578,
+   "neg_small": 975,
+   "bam_floor": 20,
+   "spike": 11,
+   "flatline": 6,
+   "below_min": 1
+  }
+ },
+ "qc_8827": {
+  "raw_rows": 33476,
+  "units": [
+   "\u00b5g/m\u00b3"
+  ],
+  "sensors": [
+   25744
+  ],
+  "exact_duplicate_rows": 0,
+  "conflicting_duplicate_hours": 0,
+  "rows_outside_window": 0,
+  "off_grid_timestamps": 0,
+  "flag_counts": {
+   "ok": 32467,
+   "missing": 22060,
+   "neg_small": 1002,
+   "flatline": 6,
+   "spike": 1
+  }
+ },
+ "hours_filled_from_8827": 1917,
+ "hours_voided_contaminated_window": 11435,
+ "final_hourly_flag_counts": {
+  "ok": 23767,
+  "feed_contaminated": 16152,
+  "missing": 12590,
+  "filled_from_8827": 1237,
+  "missing_sentinel": 1206,
+  "neg_small": 553,
+  "bam_floor": 17,
+  "spike": 7,
+  "flatline": 6,
+  "below_min": 1
+ },
+ "final_hours_by_source": {
+  "None": 29979,
+  "openaq:8225": 24320,
+  "openaq:8827": 1237
+ },
+ "model_columns_dropped_lt50pct_train_coverage": [
+  "cams_aerosol_optical_depth_lag1",
+  "cams_carbon_monoxide_lag1",
+  "cams_dust_lag1",
+  "cams_nitrogen_dioxide_lag1",
+  "cams_ozone_lag1",
+  "cams_pm10_lag1",
+  "cams_pm2_5_lag1",
+  "cams_pm2_5_max_lag1",
+  "cams_sulphur_dioxide_lag1",
+  "isd_bishkek_fog_frac_lag1",
+  "isd_bishkek_haze_smoke_frac_lag1",
+  "isd_manas_slp_mean_lag1"
+ ]
+}

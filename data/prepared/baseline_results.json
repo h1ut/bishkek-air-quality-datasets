@@ -1,0 +1,102 @@
+{
+ "validation": {
+  "persistence (D -> D+1)": {
+   "n": 267,
+   "MAE": 12.477630297577992,
+   "RMSE": 22.65801582341279,
+   "bias": -0.053074647357117345,
+   "MAE_dangerous_days": 29.389714661074127,
+   "MAE_other_days": 9.841980786383788,
+   "n_dangerous": 36,
+   "recall": 0.5555555555555556,
+   "precision": 0.5714285714285714,
+   "CSI": 0.39215686274509803
+  },
+  "train monthly climatology": {
+   "n": 267,
+   "MAE": 22.42237617239274,
+   "RMSE": 35.52449870210937,
+   "bias": 12.931733446276715,
+   "MAE_dangerous_days": 34.06819394549018,
+   "MAE_other_days": 20.607443532429503,
+   "n_dangerous": 36,
+   "recall": 0.8055555555555556,
+   "precision": 0.3372093023255814,
+   "CSI": 0.3118279569892473
+  },
+  "ridge (log1p, train-fit impute+scale)": {
+   "n": 267,
+   "MAE": 11.75561257538832,
+   "RMSE": 19.507089263799372,
+   "bias": -0.8188903970484837,
+   "MAE_dangerous_days": 30.28821871765615,
+   "MAE_other_days": 8.867414215554374,
+   "n_dangerous": 36,
+   "recall": 0.5,
+   "precision": 0.6206896551724138,
+   "CSI": 0.3829787234042553
+  },
+  "hist gradient boosting (log1p, defaults)": {
+   "n": 267,
+   "MAE": 10.365040777175135,
+   "RMSE": 18.238498234129207,
+   "bias": -1.1659450330094085,
+   "MAE_dangerous_days": 28.721067548149435,
+   "MAE_other_days": 7.50436128039992,
+   "n_dangerous": 36,
+   "recall": 0.5277777777777778,
+   "precision": 0.76,
+   "CSI": 0.4523809523809524
+  }
+ },
+ "test": {
+  "persistence (D -> D+1)": {
+   "n": 190,
+   "MAE": 29.721497879707634,
+   "RMSE": 50.5821063359251,
+   "bias": 0.43870216328137773,
+   "MAE_dangerous_days": 52.987198661123124,
+   "MAE_other_days": 15.5254770639287,
+   "n_dangerous": 72,
+   "recall": 0.7222222222222222,
+   "precision": 0.7027027027027027,
+   "CSI": 0.5531914893617021
+  },
+  "train monthly climatology": {
+   "n": 190,
+   "MAE": 39.559339083999866,
+   "RMSE": 64.54445996085711,
+   "bias": -1.9164759770984334,
+   "MAE_dangerous_days": 58.59959827597783,
+   "MAE_other_days": 27.941553814318386,
+   "n_dangerous": 72,
+   "recall": 0.7083333333333334,
+   "precision": 0.5,
+   "CSI": 0.4146341463414634
+  },
+  "ridge (log1p, train-fit impute+scale)": {
+   "n": 190,
+   "MAE": 35.574550334558005,
+   "RMSE": 96.8231311069751,
+   "bias": 14.122357637382347,
+   "MAE_dangerous_days": 71.5023470086631,
+   "MAE_other_days": 13.652504906290496,
+   "n_dangerous": 72,
+   "recall": 0.75,
+   "precision": 0.7297297297297297,
+   "CSI": 0.5869565217391305
+  },
+  "hist gradient boosting (log1p, defaults)": {
+   "n": 190,
+   "MAE": 24.701944809427477,
+   "RMSE": 44.997483148231844,
+   "bias": -9.042393276763905,
+   "MAE_dangerous_days": 47.447067957546004,
+   "MAE_other_days": 10.823564583456863,
+   "n_dangerous": 72,
+   "recall": 0.7083333333333334,
+   "precision": 0.75,
+   "CSI": 0.5730337078651685
+  }
+ }
+}
