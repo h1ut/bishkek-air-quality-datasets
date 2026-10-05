@@ -1,0 +1,70 @@
+# Study configuration for the ML-ready Bishkek PM2.5 dataset (prep/ pipeline).
+# Every rule the pipeline applies is parameterised here so a reviewer can see it in one place.
+# Rules were fixed from physical/regulatory reasoning and TRAIN-period statistics only;
+# nothing below was tuned on validation or test data.
+
+study:
+  timezone: "Asia/Bishkek"          # UTC+6 all year (no DST since 2005)
+  target: "pm2_5_local_day_mean"    # 24-h mean over the LOCAL calendar day, µg/m³, US Embassy BAM
+  horizon_days: 1                   # predict day D+1 ...
+  issue_time: "23:59 local on day D" # ... using only observations time-stamped <= end of day D
+  period_start: "2019-09-01"        # first full month of the US Embassy monitor in the OpenAQ archive
+  period_end: "2025-12-31"          # study window end (README: 2021-2025 core, monitor history used for training)
+
+# Chronological splits by TARGET date, aligned to HEATING SEASONS (Jul-Jun) so every split
+# holds whole winters. Fixed from data AVAILABILITY only (audit A1/A2: the reference series is
+# unusable 2023-03-16..2025-01-16 and ends 2025-03-04), never from model results.
+# Boundaries sit in mid-July (lowest PM2.5), so the 14-day embargo removes no winter days.
+splits:
+  train: ["2019-09-15", "2021-06-30"]          # heating seasons 2019/20, 2020/21
+  validation: ["2021-07-15", "2022-06-30"]     # heating season 2021/22
+  test: [["2022-07-15", "2023-03-15"],         # heating season 2022/23 (to the contamination start)
+         ["2025-01-17", "2025-03-04"]]         # clean tail of 2024/25 until the US feed stopped
+  embargo_days: 14
+
+thresholds:
+  # Primary "dangerous day": US EPA AQI "Unhealthy" for 24-h PM2.5 (2024 revision: 55.5-125.4 µg/m³).
+  # EPA truncates the 24-h mean to 0.1 µg/m³ before categorising, so dangerous <=> trunc1(mean) >= 55.5.
+  dangerous_pm25_24h: 55.5
+  # Secondary: Kyrgyz national daily limit (ПДК с.с., ПП КР №201/2016, поз. 613): mean > 35 µg/m³.
+  kg_limit_pm25_24h: 35.0
+  # EPA data-handling rule for a valid 24-h mean: >= 75 % of hours (18 of 24).
+  min_valid_hours: 18
+
+qc_pm25_hourly:
+  # Rules for the Met One BAM-1020 at the US Embassy (EPA FEM). Thresholds were set from the
+  # TRAIN period (2019-09..2021-06) only - see DATA_AUDIT_REPORT.md section 3.
+  missing_sentinel: -999          # archive placeholder for "no data" (not a measurement)
+  bam_floor_value: -15            # fixed value the BAM reports on a failed cycle -> invalid
+  min_valid: -10.0                # train: negatives are -1..-6 (noise) plus isolated -13/-15
+  max_valid: 985.0                # BAM-1020 error codes are 985 / 990 / 995 µg/m³
+  error_codes: [985, 990, 995, 999]
+  flatline_hours: 6               # train: longest natural run of identical values >2 µg/m³ is 5 h
+  flatline_min_value: 2.0
+  spike_ratio: 6.0                # isolated 1-h excursion > 6x BOTH neighbours ...
+  spike_min: 300.0                # ... and > 300 µg/m³ -> 'spike' (excluded; sensitivity reported)
+
+features:
+  pm_lags_days: [1, 2, 3, 7]        # lag 1 = day D (latest complete day at issue time)
+  pm_rolling_days: [3, 7, 14]
+  hourly_tail_hours: [18, 19, 20, 21, 22, 23]   # last evening hours of day D (local) - inversion build-up
+
+# US Embassy feed corrections (evidence: DATA_AUDIT_REPORT.md, A1 and A3)
+us_embassy_contaminated_window: ["2023-03-16", "2025-01-16"]   # local dates, inclusive
+us_embassy_dup_alignment:        # hours to ADD to 8827 timestamps to match 8225 (100 % identical values)
+  - {from: "2019-09-01", to: "2021-02-01", shift_h: 1}
+  - {from: "2021-06-01", to: "2022-07-01", shift_h: 2}
+  - {from: "2022-09-01", to: "2023-07-01", shift_h: 1}
+  - {from: "2024-03-01", to: "2025-01-01", shift_h: 0}
+  - {from: "2025-01-01", to: "2025-03-05", shift_h: -1}
+
+sources:
+  openaq_archive_bucket: "https://openaq-data-archive.s3.amazonaws.com/"
+  us_embassy_location_ids: {primary: 8225, duplicate_feed: 8827}   # see prep/sources/openaq_archive.py
+  isd_bucket: "https://noaa-global-hourly-pds.s3.amazonaws.com/"
+  isd_stations:
+    bishkek_synop: "38353099999"     # BISHKEK, KG 42.85N 74.53E 760 m, SYNOP 3-hourly (in the city)
+    manas_metar: "38353199999"       # MANAS (UCFM), 43.06N 74.48E 627 m, METAR half-hourly (22 km N)
+  openmeteo_bucket: "openmeteo"     # AWS Open Data, anonymous S3
+  era5_cell: {lat: 43.0, lon: 74.5}  # ERA5 0.25° cell, model elevation 748 m (closest to Bishkek's ~760-800 m)
+  cams_cell: {lat: 42.8, lon: 74.4}  # CAMS global 0.4° cell nearest to the embassy
